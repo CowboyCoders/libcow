@@ -138,17 +138,16 @@ bool on_demand_server_connection::close()
     return true;
 }
 
-void on_demand_server_connection::send(const std::vector<piece_request> & requests)
+void on_demand_server_connection::send(const std::size_t piece_size, const std::vector<int> indices)
 {
-    for(size_t i = 0; i < requests.size(); ++i){
-        io_service.post(
-                boost::bind(&on_demand_server_connection::worker,
-                            this,
-                            connection_string_,
-                            requests[i]));
-
-    }
+    io_service.post(
+            boost::bind(&on_demand_server_connection::worker,
+                        this,
+                        connection_string_,
+                        piece_size,
+                        indices));
 }
+
 size_t libcow::curl_instance::write_data(void * buffer,
                                          size_t size,
                                          size_t nmemb,
@@ -178,8 +177,11 @@ size_t libcow::curl_instance::write_data(void * buffer,
 
     return size * nmemb;
 }
+
+
 void on_demand_server_connection::worker(std::string connection_str,
-                                         piece_request req)
+                                         const std::size_t piece_size,
+                                         const std::vector<int> indices)
 {
     // create a new curl instance for this thread if none exists
     if(curl_ptr.get() == 0) {
@@ -192,33 +194,39 @@ void on_demand_server_connection::worker(std::string connection_str,
         * buffer_wrapper will delete its internal buffer when we fall out
         * of this scope.
         */
-    libcow::buffer_wrapper wrapper(req.piece_size * req.count);
+    libcow::buffer_wrapper wrapper(piece_size * indices.size());
 
     // these are the pointers we will actually pass to the user
     std::vector<piece_data> piece_datas;
 
     // "slice" up the buffer into pieces
     // (in fact, we just do some pointer arithmetic on the buffer)
-    for(size_t i = 0; i < req.count; ++i) {
+    for(size_t i = 0; i < indices.size(); ++i) {
         piece_datas.push_back(
-                piece_data(req.index+i, utils::buffer(wrapper.buffer + (req.piece_size * i), req.piece_size)));
+                piece_data(indices[i], utils::buffer(wrapper.buffer + (piece_size * i), piece_size)));
     }
 
     curl_easy_setopt(curl_ptr->curl, CURLOPT_WRITEDATA, (void*)&wrapper);
 
     std::stringstream size_str;
-    size_str << "Size: " << req.piece_size;
+    size_str << "Size: " << piece_size;
 
     std::stringstream index_str;
-    index_str << "Index: " << req.index;
+    index_str << "Indices: ";
 
-    std::stringstream count_str;
-    count_str << "Count: " << req.count;
+    std::vector<int>::const_iterator it;
+    for(it = indices.begin(); it != indices.end(); ++it) {
+        if((it+1) == indices.end())
+        {
+            index_str << *it;
+        } else {
+            index_str << (*it) << " ";
+        }
+    }
 
     struct curl_slist *chunk = NULL;
     chunk = curl_slist_append(chunk, size_str.str().c_str());
     chunk = curl_slist_append(chunk, index_str.str().c_str());
-    chunk = curl_slist_append(chunk, count_str.str().c_str());
 
     CURLcode res;
 
@@ -278,12 +286,40 @@ bool on_demand_server_connection::set_add_pieces_function(response_handler_funct
     return true;
 }
 
+
 bool on_demand_server_connection::get_pieces(const std::vector<piece_request> & requests)
 {
     if(!is_open_){
         BOOST_LOG_TRIVIAL(error) << "The device is not open!";
         return false;
     }
-    send(requests);
-    return true;
+
+    if(requests.size() == 0)
+    {
+        BOOST_LOG_TRIVIAL(error) << "Request input was of size 0";
+        return false;
+    } else
+    {
+        std::vector<int> indices;
+
+        std::size_t piece_size = requests[0].piece_size;
+
+        std::vector<piece_request>::const_iterator it;
+        for(it = requests.begin(); it != requests.end(); ++it)
+        {
+            piece_request req = *it;
+            if(piece_size != req.piece_size)
+            {
+                BOOST_LOG_TRIVIAL(error) << "All pieces must have the same size";
+                return false;
+            }
+            for(size_t i = 0; i < req.count; ++i)
+            {
+                indices.push_back(req.index+i);
+            }
+        }
+
+        send(piece_size,indices);
+        return true;
+    }
 }

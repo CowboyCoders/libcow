@@ -120,7 +120,8 @@ namespace libcow {
          std::string connection_string_;
          // worker thread function
          void worker(std::string connection_str,
-                     piece_request req);
+                     const std::size_t piece_size,
+                     const std::vector<int> indices);
 
 
          // 'work' needs io_service for init.
@@ -137,7 +138,7 @@ namespace libcow {
          int id_; //Device id
 
 
-         void send(const std::vector<piece_request> & requests);
+         void send(const std::size_t piece_size, const std::vector<int> indices);
     };
 
 }
