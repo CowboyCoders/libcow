@@ -54,7 +54,6 @@ download_control::~download_control()
 
 progress_info download_control::get_progress()
 {
-	static int has_shit = 0;
     libtorrent::torrent_status status = handle_.status();
 
     std::cout << "download rate: "  
@@ -120,7 +119,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 
     for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
     {
-        if(iter->data.size() != info.piece_size(iter->index)) {
+        if((int)iter->data.size() != info.piece_size(iter->index)) {
             BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                 << "trying to add piece with index " << iter->index
                 << "and size " << iter->data.size() << ", but expected size is "
@@ -149,7 +148,7 @@ bool download_control::has_data(size_t offset, size_t length)
 	size_t piece_start = offset / piece_size;
 	size_t piece_end = (offset + length - 1) / piece_size;
     
-	if (piece_end >= info.num_pieces() || piece_start >= info.num_pieces()){
+    if ((int)piece_end >= info.num_pieces() || (int)piece_start >= info.num_pieces()){
         throw std::out_of_range("has_data: piece index out of range");
 	}
 
@@ -181,7 +180,7 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     }
 
     if(!file_handle_) {
-        file_handle_.open(filename, std::ios_base::in | std::ios_base::binary);
+        file_handle_.open(filename.c_str(), std::ios_base::in | std::ios_base::binary);
         if(!file_handle_) {
             BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << filename;
             return 0;
