@@ -53,6 +53,11 @@ or implied, of CowboyCoders.
 
 #include "cow/libcow_types.hpp"
 
+// turn off cassert in release
+#ifndef DEBUG
+#   define NDEBUG
+#endif
+
 //
 // Project wide definitions for libcow
 //
@@ -79,14 +84,5 @@ or implied, of CowboyCoders.
 #else
     #define LIBCOW_EXPORT
 #endif
-
-//portable sleep
-/*
-#ifdef WIN32
-    #define LIBCOW_SLEEP(n) Sleep((n)*1000) 
-#else
-    #define LIBCOW_SLEEP(n) sleep((n))
-#endif
-*/
 
 #endif // ___libcow_def___

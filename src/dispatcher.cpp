@@ -1,3 +1,4 @@
+#include "cow/libcow_def.hpp"
 #include "cow/dispatcher.hpp"
 
 #include <iostream>

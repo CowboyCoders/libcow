@@ -146,10 +146,10 @@ IF(WIN32)
         winmm
         wldap32
 
-        debug libcurld
+        debug libcurl
         optimized libcurl
         )
-    SET(TEST_DEPS ${LIBCOW_DEPS} cow.lib)
+    SET(TEST_DEPS ${LIBCOW_DEPS} cowd.lib)
 ELSEIF(UNIX)
     SET(LIBCOW_DEPS
         ${CURL_LIBRARY}
@@ -177,7 +177,7 @@ ENDIF(WIN32)
 # Set this to TRUE if you want to build the tests
 # You can also pass the flag -DBUILD_TEST:BOOL=TRUE to cmake
 # i.e. cmake -DBUILD_TEST:BOOL=TRUE ..
-set(BUILD_TEST FALSE)
+set(BUILD_TEST TRUE)
 
 IF(BUILD_TEST)
 # download_control test target

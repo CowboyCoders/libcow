@@ -181,7 +181,7 @@ download_control* cow_client::start_download(int program_id)
 {
     libtorrent::add_torrent_params params;
     params.save_path = download_directory_;
-    params.storage_mode = libtorrent::storage_mode_sparse; // allocate Ensure slot consistency. (sux)
+    params.storage_mode = libtorrent::storage_mode_allocate; // allocate Ensure slot consistency. (sux)
 
 	std::map<std::string, properties> devices = download_device_information_map_[program_id];
 	

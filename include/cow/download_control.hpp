@@ -45,10 +45,11 @@ namespace libcow {
         ~download_control();
 
         progress_info get_progress();
-        void pre_buffer(size_t offset,   size_t length);
+        void pre_buffer(size_t offset, size_t length);
+        void pre_buffer(const std::vector<libcow::piece_request> requests);
         size_t read_data(size_t offset, libcow::utils::buffer& buffer);
         bool has_data(size_t offset, size_t length);
-        
+
 		int piece_length();
 		
         void add_pieces(int id, const std::vector<libcow::piece_data>& pieces);
@@ -68,8 +69,7 @@ namespace libcow {
 
         std::vector<boost::shared_ptr<download_device> > download_devices;
 
-        // File handle for reading the downloaded program data
-        std::ifstream file_;
+        std::ifstream file_handle_;
 
         dispatcher disp_;
 

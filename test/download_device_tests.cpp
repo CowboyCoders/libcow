@@ -71,7 +71,7 @@ int main()
     settings["file"] = "big_buck_bunny";
     settings["max_simultaneous_downloads"] = "3";
 
-    test_connection.open(settings);
+    test_connection.open(1, settings);
     print_connection_state(test_connection);
 
     test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1));
@@ -86,6 +86,7 @@ int main()
 
     while(true) {
         BOOST_LOG_TRIVIAL(info) << "Waiting...";
+        
         libcow::system::sleep(100);
     }
 

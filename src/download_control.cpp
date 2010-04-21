@@ -32,6 +32,7 @@ or implied, of CowboyCoders.
 #include "cow/piece_request.hpp"
 #include "cow/progress_info.hpp"
 #include "cow/download_device.hpp"
+#include "cow/system.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -76,13 +77,6 @@ progress_info download_control::get_progress()
         break;
     case libtorrent::torrent_status::downloading: 
         state = progress_info::downloading;
-		if(!has_shit) {
-			std::cout << "on demand opened? " << download_devices[0].get()->is_open() << std::endl;    
-			std::vector<libcow::piece_request> gief_movie;
-            gief_movie.push_back(piece_request(256*1024, 10, 10));
-			download_devices[0].get()->get_pieces(gief_movie);
-			has_shit = 1;
-		}
         break;
     case libtorrent::torrent_status::downloading_metadata: 
         state = progress_info::downloading_metadata; 
@@ -100,8 +94,6 @@ progress_info download_control::get_progress()
         state = progress_info::unknown;
     }
 	
-	std::cout << "has_data: " << has_data(0,1000000) << std::endl;
-
     std::vector<libtorrent::peer_info> peers;
     handle_.get_peer_info(peers);
     std::vector<libtorrent::peer_info>::iterator iter;
@@ -149,58 +141,86 @@ void download_control::add_download_device(download_device* dd)
 
 bool download_control::has_data(size_t offset, size_t length)
 {
-	bool seeding = (handle_.status().state == libtorrent::torrent_status::seeding);
+    assert(length > 0);
 	
-	libtorrent::bitfield pieces = handle_.status().pieces;
-	int piece_size = handle_.get_torrent_info().piece_length();
-	assert(piece_size >= 0);
+    const libtorrent::torrent_info& info = handle_.get_torrent_info();
+	int piece_size = info.piece_length();
+    
 	size_t piece_start = offset / piece_size;
-	size_t piece_end = (offset + length) / piece_size;
-	if (piece_end >= handle_.status().num_pieces || piece_start >= handle_.status().num_pieces){
-		return false;
+	size_t piece_end = (offset + length - 1) / piece_size;
+    
+	if (piece_end >= info.num_pieces() || piece_start >= info.num_pieces()){
+        throw std::out_of_range("has_data: piece index out of range");
 	}
-	if (!seeding){
-		/*
-		// piece debugging info broet-output
-		std::cout<<"piece_start: " << piece_start << " piece_end: " << piece_end << std::endl;
-		for (int i = 0 ; i < pieces.size(); i++){
-			std::cout<< pieces[i];
-		}
-		std::cout<<std::endl;
-		*/
-		for (; piece_start <= piece_end ; piece_start++){
-			if (!pieces[piece_start]){
+
+    libtorrent::torrent_status status = handle_.status();
+	if (status.state != libtorrent::torrent_status::seeding){
+	    const libtorrent::bitfield& pieces = status.pieces;
+		for (size_t i = piece_start; i <= piece_end ; ++i) {
+			if (!pieces[i]) {
 				return false;
 			}
 		}
 	}
+
     return true;
 }
 
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 {
-	if (has_data(offset, buffer.size())){
-		int piece_size = handle_.get_torrent_info().piece_length();
-		int start_piece = offset / piece_size;
-		int offset_in_start_piece = (offset - start_piece * piece_size);
-		char* data = buffer.data();
-		
-		int bytes_left = buffer.size();
+    // FIXME: reads from file with index 0 ONLY!
+    libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
+    std::string filename = file_entry.path.filename();
 
-		int piece_to_read = start_piece;
-		int offset_in_piece = offset_in_start_piece;
-		while(bytes_left > 0){
-			std::cout << "Reading data from piece nr " << piece_to_read << ", index " << offset_in_piece << std::endl;
-			size_t data_read = handle_.get_storage_impl()->read(data, piece_to_read,
-				offset_in_piece, std::min(bytes_left, piece_size - offset_in_piece));
-			std::cout << "Read " << data_read << " bytes of data." << std::endl;
-			bytes_left -= data_read;
-			if(data_read == 0)
-				break;
-			piece_to_read++;
-			offset_in_piece = 0;
-		}
-		return buffer.size()-bytes_left;
-	}
-	return 0;
+    std::cout << "filename: " << filename << std::endl;
+
+    std::cout << "offset: " << offset << " bufsize: " << buffer.size() << std::endl;
+
+	while(!has_data(offset, buffer.size())){
+        libcow::system::sleep(10);
+    }
+
+    if(!file_handle_) {
+        file_handle_.open(filename, std::ios_base::in | std::ios_base::binary);
+        if(!file_handle_) {
+            BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << filename;
+            return 0;
+        }
+
+        file_handle_.seekg(offset);
+        file_handle_.read(buffer.data(), buffer.size());
+
+        std::cout << "READ DATA!" << std::endl;
+        std::cout << std::endl;
+    }
+    
+    return file_handle_.gcount();
+}
+
+void download_control::pre_buffer(size_t offset, size_t length)
+{
+
+}
+
+void download_control::pre_buffer(const std::vector<libcow::piece_request> requests)
+{
+    //FIXME: only uses
+    std::vector<boost::shared_ptr<download_device> >::iterator it;
+
+    download_device* random_access_device = 0;
+
+    for(it = download_devices.begin(); it != download_devices.end(); ++it) {
+        download_device* current = it->get();
+        if(current != 0 && current->is_random_access()) {
+            random_access_device = current;
+            break;
+        }
+    }
+
+    if(random_access_device) 
+    {
+        random_access_device->get_pieces(requests);
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
+    }
 }

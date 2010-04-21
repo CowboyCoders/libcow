@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
             new libcow::multicast_server_connection_factory()),
         "multicast");
 
+    client.get_program_table();
     std::cout << "starting download" << std::endl;
     libcow::download_control* ctrl = client.start_download(1);
 
@@ -71,18 +72,32 @@ int main(int argc, char* argv[])
 
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 
-    ctrl->get_progress();
 	
-	libcow::utils::buffer buf(new char[256*1024], 256*1024);
-    while(true) {
-		libcow::system::sleep(10000);
-		libcow::progress_info progress_info = ctrl->get_progress();	
-		std::cout << "read_data returned: " << ctrl->read_data(640*1024, buf) << std::endl;
+    libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
+    
+    for(int i = 0; i < 2; ++i) {
+        ctrl->get_progress();
+        libcow::progress_info progress_info = ctrl->get_progress();
         std::cout << "State: " << progress_info.state_str() 
             << ", Progress: " << (progress_info.progress() * 100.0) 
             << "%" << std::endl;
         libcow::system::sleep(1000);
     }
+
+    std::vector<libcow::piece_request> reqs;
+    reqs.push_back(libcow::piece_request(ctrl->piece_length(),25,5));
+    ctrl->pre_buffer(reqs);
+
+    size_t buf_size = ctrl->piece_length() * 5;
+    char* databuf = new char[buf_size];
+    libcow::utils::buffer buffo(databuf, buf_size);
+    ctrl->read_data(ctrl->piece_length() * 25, buffo);
+
+    std::cout << "i'm happy!" << std::endl;
+
+    while(true);
+
+    delete [] databuf;
 
     client.stop_download(1);
 
