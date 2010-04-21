@@ -55,6 +55,14 @@ program_info* parse_program_info(TiXmlElement* p) {
     if(p->QueryIntAttribute("id", &pi->id) != TIXML_SUCCESS)
         std::cerr << "Invalid program: attribute missing\n";
 
+    TiXmlHandle tmp_handle(p);
+    TiXmlElement* child = tmp_handle.FirstChild("name").ToElement();
+
+    pi->name = child->GetText();
+
+    child = tmp_handle.FirstChild("description").ToElement();
+
+    pi->description = child->GetText();
     return pi;
 }
 
@@ -107,6 +115,8 @@ void cow_client::set_bittorrent_port(int port)
 
 std::list<program_info> cow_client::get_program_table()
 {
+    download_device_information_map_.clear();
+
     std::list<program_info> prog_info_list;
     std::string program_table = http_get_as_string("cowboycoders.se/program_table.xml");
     BOOST_LOG_TRIVIAL(debug) << "cow_client: downloaded xml with size:" << program_table.length();
@@ -150,7 +160,7 @@ std::list<program_info> cow_client::get_program_table()
             device_prop_map[type] = props;
         }
         prog_info_list.push_back(*pi);
-        download_device_information_map_[pi->id] = device_prop_map;
+        download_device_information_map_[1] = device_prop_map;
 	}
 	
     return prog_info_list;

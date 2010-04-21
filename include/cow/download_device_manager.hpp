@@ -30,6 +30,7 @@ or implied, of CowboyCoders.
 #define ___libcow_download_device_manager___
 
 #include <boost/shared_ptr.hpp>
+#include "cow/libcow_def.hpp"
 
 #include "libcow_def.hpp"
 
