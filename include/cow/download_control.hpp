@@ -54,6 +54,7 @@ namespace libcow {
         void add_download_device(download_device* dd);
 
         std::map<int,std::string> * piece_sources_;
+        std::vector<int> piece_origin_;
 
     private:
         libtorrent::torrent_handle handle_;

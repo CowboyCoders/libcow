@@ -25,7 +25,7 @@ The views and conclusions contained in the software and documentation are those 
 authors and should not be interpreted as representing official policies, either expressed
 or implied, of CowboyCoders.
 */
-
+#include "libtorrent/session.hpp"
 #ifndef ___libcow_progress_info___
 #define ___libcow_progress_info___
 
@@ -49,9 +49,13 @@ namespace libcow {
         };
 
         progress_info(torrent_state state,
-                      float progress) 
+                      float progress,
+                      libtorrent::bitfield downloaded,
+                      std::vector<int> piece_origin)
             : state_(state),
-              progress_(progress)
+              progress_(progress),
+              downloaded_(downloaded),
+              piece_origin_(piece_origin)
         {
         }
 
@@ -70,9 +74,21 @@ namespace libcow {
             return state_;
         }
 
+        libtorrent::bitfield downloaded()
+        {
+            return downloaded_;
+        }
+
+        std::vector<int> piece_origin()
+        {
+            return piece_origin_;
+        }
+
     private:
         torrent_state state_;
         float progress_;
+        libtorrent::bitfield downloaded_;
+        std::vector<int> piece_origin_;
 
         const char* state2str()
         {

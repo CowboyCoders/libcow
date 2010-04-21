@@ -110,7 +110,7 @@ progress_info download_control::get_progress()
     }
     std::cout << std::endl;
 
-    return progress_info(state, status.progress);
+    return progress_info(state, status.progress, handle_.status().pieces, piece_origin_);
 }
 
 int download_control::piece_length()
