@@ -1,0 +1,21 @@
+--- Building cow_client in Windows ---
+
+1. Open the command prompt and change directory to the cow_client root directory.
+
+2. The CMake script will use environmental variables to locate libraries. Set appropriate paths, for example:
+    
+    set BOOST_ROOT=C:\boost_1_42_0
+    set LIBTORRENT_ROOT=C:\path\to\libtorrent
+    set LIBTORRENT_LIB=C:\path\to\libtorrent\lib\files\directory
+    
+LIBTORRENT_LIB is the path where the .lib and .dll files of libtorrent are found.
+    
+3. Create a build directory:
+
+    mkdir build
+
+4. Run cmake:
+
+    cmake ..
+    
+5. Now, open the solution file build/COW_CLIENT.sln in Visual Studio and build.
