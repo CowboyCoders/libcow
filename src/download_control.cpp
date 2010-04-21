@@ -124,6 +124,8 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
     libtorrent::torrent_info info = handle_.get_torrent_info();
     std::vector<piece_data>::const_iterator iter;
 
+
+
     for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
     {
         if(iter->data.size() != info.piece_size(iter->index)) {
@@ -133,7 +135,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
                 << info.piece_size(iter->index);
             return; //TODO: throw exception here?
         }
-
+        disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
         handle_.add_piece(iter->index, iter->data.data());
     }
 }

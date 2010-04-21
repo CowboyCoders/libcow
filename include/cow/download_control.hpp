@@ -30,8 +30,10 @@ or implied, of CowboyCoders.
 #define ___libcow_download_control___
 
 #include "buffer.hpp"
+#include "dispatcher.hpp"
 
 #include <boost/noncopyable.hpp>
+#include <boost/log/trivial.hpp>
 #include <libtorrent/torrent_handle.hpp>
 
 namespace libcow {
@@ -51,6 +53,11 @@ namespace libcow {
 		
         void add_pieces(int id, const std::vector<libcow::piece_data>& pieces);
 
+        void set_piece_src(int source, int piece_index) {
+            BOOST_LOG_TRIVIAL(info) << "Setting source " << source << " for piece id " << piece_index;
+            piece_origin_[piece_index] = source;
+        }
+
         void add_download_device(download_device* dd);
 
         std::map<int,std::string> * piece_sources_;
@@ -63,6 +70,8 @@ namespace libcow {
 
         // File handle for reading the downloaded program data
         std::ifstream file_;
+
+        dispatcher disp_;
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;

@@ -34,6 +34,7 @@ set(PACKETIZER_SOURCE_DIR ${LIBCOW_SOURCE_DIR}/../packetizer/src)
 set(LIBCOW_SOURCE
     ${LIBCOW_SOURCE_DIR}/src/cow_client.cpp
     ${LIBCOW_SOURCE_DIR}/src/curl_instance.cpp
+    ${LIBCOW_SOURCE_DIR}/src/dispatcher.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_control.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_device.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_device_manager.cpp
@@ -55,6 +56,7 @@ set(LIBCOW_HEADERS
     ${LIBCOW_SOURCE_DIR}/include/cow/libcow_types.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/cow_client.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/curl_instance.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/dispatcher.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_control.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_device.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_device_description.hpp
