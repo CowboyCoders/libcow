@@ -79,7 +79,7 @@ namespace libcow {
             return downloaded_;
         }
 
-        std::vector<int> piece_origin()
+        const std::vector<int>& piece_origin() const
         {
             return piece_origin_;
         }
