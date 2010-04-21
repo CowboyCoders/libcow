@@ -37,7 +37,8 @@ or implied, of CowboyCoders.
 namespace libcow {
 
     /**
-    * \class This class serves as an abstraction layer between different
+    * \class download_device 
+    * A download_device serves as an abstraction layer between different
     * download sources and a download_control. This interface can be
     * implemented in order to create new download sources,
     * e.g. BitTorrent, FTP, Multicast etc.
@@ -48,56 +49,60 @@ namespace libcow {
         
         virtual ~download_device() {}
 
-       /**
-        * \fn This function opens the device using the specified settings.
+       /** 
+        * This function opens the device using the specified settings.
+        * 
         * @param settings A map of settings in the form of value pairs.
         * @return True if the device could be opened, otherwise false.
-        */
+        **/
         virtual bool open(const int id, const libcow::properties& settings) = 0;
 
        /**
-        * \fn This function closes the device.
+        * This function closes the device.
         * @return True if the device could be closed, otherwise false.
         */
         virtual bool close() = 0;
 
        /**
-        * \fn This function returns whether or not the device is open.
+        * This function returns whether or not the device is open.
         * @return True if the device is open, otherwise false.
         */
         virtual bool is_open() = 0;
 
        /**
-        * \fn This function returns whether or not the device is readable.
+        * This function returns whether or not the device is readable.
         * @return True if the device is readable, otherwise false.
         */
         virtual bool is_readable() = 0;
 
        /**
-        * \fn This function returns whether or not the device is a streaming device.
+        * This function returns whether or not the device is a streaming device.
         * @return True if the device is a streaming device, otherwise false.
         */
         virtual bool is_stream() = 0;
 
        /**
-        * \fn This function returns whether or not the device is a random access device.
+        * This function returns whether or not the device is a random access device.
         * Random access devices needs to support requests for a random piece in the media,
         * while non-random access devices simply sends the available data to the
         * download_control.
+        * 
         * @return True if the device is a random access device, otherwise false.
         */
         virtual bool is_random_access() = 0;
 
        /**
-        * \fn This function sets the callback function to call when a piece has finished
+        * This function sets the callback function to call when a piece has finished
         * downloading.
+        * 
         * @return True if it was possible to set the callback, otherwise false.
         */
         virtual bool set_add_pieces_function(libcow::response_handler_function add_pieces_function) = 0;
 
        /**
-        * \fn This function is used by download_control to request pieces from random
+        * This function is used by download_control to request pieces from random
         * access devices.
+        * 
         * @return True if it was possible to get the pieces, otherwise false.
         */
         virtual bool get_pieces(const std::vector<libcow::piece_request> & requests) = 0;

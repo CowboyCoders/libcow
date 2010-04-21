@@ -32,7 +32,8 @@ or implied, of CowboyCoders.
 namespace libcow {
 
     /**
-     * \struct A struct containing information about a request for a media piece.
+     * \struct piece_request 
+     * This struct contains information about a request for a media piece.
      */
     struct LIBCOW_EXPORT piece_request
     {
