@@ -60,7 +60,7 @@ namespace libcow {
          * @param settings A map of settings in the form of value pairs.
          * @return True if the device could be opened, otherwise false.
          */
-         virtual bool open(const properties & settings);
+         virtual bool open(const int id, const properties & settings);
 
         /**
          * \fn This function closes the device.
@@ -133,6 +133,8 @@ namespace libcow {
 
          // this gives us one curl instance per thread in the pool
          boost::thread_specific_ptr<curl_instance> curl_ptr;
+
+         int id_; //Device id
 
 
          void send(const std::vector<piece_request> & requests);

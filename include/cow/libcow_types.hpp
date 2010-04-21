@@ -44,7 +44,7 @@ struct program_sources;
 struct download_device_factory;
 
 typedef std::map<std::string, std::string> properties;
-typedef boost::function<void(std::vector<libcow::piece_data>)> response_handler_function;
+typedef boost::function<void(int id, std::vector<libcow::piece_data>)> response_handler_function;
 
 }
 

@@ -53,7 +53,7 @@ namespace libcow {
         * @param settings A map of settings in the form of value pairs.
         * @return True if the device could be opened, otherwise false.
         */
-        virtual bool open(const libcow::properties& settings) = 0;
+        virtual bool open(const int id, const libcow::properties& settings) = 0;
 
        /**
         * \fn This function closes the device.

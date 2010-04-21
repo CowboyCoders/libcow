@@ -49,9 +49,11 @@ namespace libcow {
         
 		int piece_length();
 		
-		void add_pieces(const std::vector<libcow::piece_data>& pieces);
+        void add_pieces(int id, const std::vector<libcow::piece_data>& pieces);
 
         void add_download_device(download_device* dd);
+
+        std::map<int,std::string> * piece_sources_;
 
     private:
         libtorrent::torrent_handle handle_;
@@ -63,6 +65,7 @@ namespace libcow {
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;
+
     };
 }
 

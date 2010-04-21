@@ -39,14 +39,14 @@ void download_device_manager::register_download_device_factory(
     factories[identifier] = factory;
 }   
 
-download_device* download_device_manager::create_instance(std::string ident, const properties& pmap) 
+download_device* download_device_manager::create_instance(int id, std::string ident, const properties& pmap)
 {   
    std::map<std::string, boost::shared_ptr<download_device_factory> >::iterator it; 
    it = factories.find(ident);
    if(it == factories.end()) {
        return 0;
    } else {
-       return it->second.get()->create(pmap);
+       return it->second.get()->create(id, pmap);
    }
 }
 

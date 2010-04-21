@@ -40,9 +40,10 @@ or implied, of CowboyCoders.
 using namespace libcow;
 
 download_control::download_control(const libtorrent::torrent_handle& handle)
-    : handle_(handle) 
-{
+    : piece_sources_(0),
+    handle_(handle)
 
+{
 }
 
 download_control::~download_control()
@@ -77,7 +78,7 @@ progress_info download_control::get_progress()
 		if(!has_shit) {
 			std::cout << "on demand opened? " << download_devices[0].get()->is_open() << std::endl;    
 			std::vector<libcow::piece_request> gief_movie;
-			gief_movie.push_back(piece_request(256*1024, 0, 30));
+            gief_movie.push_back(piece_request(256*1024, 10, 10));
 			download_devices[0].get()->get_pieces(gief_movie);
 			has_shit = 1;
 		}
@@ -118,10 +119,11 @@ int download_control::piece_length()
 	return ti.piece_length();
 }
 
-void download_control::add_pieces(const std::vector<piece_data>& pieces)
+void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
     libtorrent::torrent_info info = handle_.get_torrent_info();
     std::vector<piece_data>::const_iterator iter;
+
     for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
     {
         if(iter->data.size() != info.piece_size(iter->index)) {
@@ -175,18 +177,28 @@ bool download_control::has_data(size_t offset, size_t length)
 
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 {
-    if (!file_) {
-        const libtorrent::torrent_info& info = handle_.get_torrent_info();
-        const libtorrent::file_entry& file = info.file_at(0);
-        file_.open(file.path.string(), std::ios_base::in | std::ios_base::binary);
+	if (has_data(offset, buffer.size())){
+		int piece_size = handle_.get_torrent_info().piece_length();
+		int start_piece = offset / piece_size;
+		int offset_in_start_piece = (offset - start_piece * piece_size);
+		char* data = buffer.data();
+		
+		int bytes_left = buffer.size();
 
-        if (!file_) {
-            throw "some_exception";
-        }
-    }
-
-    file_.seekg(offset);
-    file_.read(buffer.data(), buffer.size());
-
-    return static_cast<size_t>(file_.gcount());
+		int piece_to_read = start_piece;
+		int offset_in_piece = offset_in_start_piece;
+		while(bytes_left > 0){
+			std::cout << "Reading data from piece nr " << piece_to_read << ", index " << offset_in_piece << std::endl;
+			size_t data_read = handle_.get_storage_impl()->read(data, piece_to_read,
+				offset_in_piece, std::min(bytes_left, piece_size - offset_in_piece));
+			std::cout << "Read " << data_read << " bytes of data." << std::endl;
+			bytes_left -= data_read;
+			if(data_read == 0)
+				break;
+			piece_to_read++;
+			offset_in_piece = 0;
+		}
+		return buffer.size()-bytes_left;
+	}
+	return 0;
 }

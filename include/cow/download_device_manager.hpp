@@ -46,7 +46,7 @@ namespace libcow {
         /** @return A new download_device of some type specified by the unique identifier.
         * Returns 0 if no such download_device type is registered.
         */
-        download_device* create_instance(std::string ident, const properties& pmap);
+        download_device* create_instance(int id, std::string ident, const properties& pmap);
 
         //TODO: delete_instance ?
 

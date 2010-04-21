@@ -56,7 +56,8 @@ multicast_server_connection::multicast_server_connection() :
         piece_size_(0),
         packetizer_(),
         strand_(io_service_),
-        socket_(io_service_)
+        socket_(io_service_),
+        id_(0)
 {
 
 }
@@ -71,12 +72,13 @@ multicast_server_connection::~multicast_server_connection()
         threads[i]->join();
     }
 }
-bool multicast_server_connection::open(const libcow::properties& settings)
+bool multicast_server_connection::open(const int id, const libcow::properties& settings)
 {
     if(is_open_) {
         BOOST_LOG_TRIVIAL(error) << "The device is already open!";
         return false;
     }
+    id_ = id;
     std::string listen_addr = "";
     size_t multicast_port = 0;
     size_t packet_size = 0;
@@ -187,7 +189,7 @@ void multicast_server_connection::handle_receive(const boost::system::error_code
                     std::vector<libcow::piece_data> piece_datas;
                     counter_ = 0;
                     piece_datas.push_back(finished_piece);
-                    handler_(piece_datas);
+                    handler_(id_, piece_datas);
                     memset(piece_data_,0,piece_size_);
                 }
 

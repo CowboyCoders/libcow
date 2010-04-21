@@ -53,7 +53,7 @@ namespace libcow {
          * @param settings A map of settings in the form of value pairs.
          * @return True if the device could be opened, otherwise false.
          */
-         virtual bool open(const libcow::properties& settings);
+         virtual bool open(const int id, const libcow::properties& settings);
 
         /**
          * \fn This function closes the device.
@@ -128,6 +128,7 @@ namespace libcow {
          boost::asio::io_service io_service_;
          boost::asio::strand strand_;
          boost::asio::ip::udp::socket socket_;
+         int id_;
          boost::asio::ip::udp::endpoint sender_endpoint_;
          std::ofstream file_stream_;
 

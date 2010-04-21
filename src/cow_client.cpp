@@ -61,7 +61,8 @@ program_info* parse_program_info(TiXmlElement* p) {
 
 cow_client::cow_client()
     : max_num_log_messages_(default_max_num_log_messages_),
-      logging_interval_(default_logging_interval_)
+      logging_interval_(default_logging_interval_),
+      download_device_id_(0)
 {
     //TODO: change this to configurable log levels
 	session_.set_alert_mask(libtorrent::alert::progress_notification |
@@ -212,15 +213,23 @@ download_control* cow_client::start_download(int program_id)
 
         if(dc) 
         {
+            dc->piece_sources_ =  &piece_sources_;
             //TODO: Complete this stuff!
             std::map<std::string, properties>::iterator dev_iter;
+            std::map<int, std::string>::iterator id_iter;
             for (dev_iter = devices.begin(); dev_iter != devices.end(); ++dev_iter) {
+                int id = 0;
+                for(id_iter = piece_sources_.begin(); id_iter != piece_sources_.end(); ++id_iter){
+                    if(id_iter->second == dev_iter->first) {
+                        id = id_iter->first;
+                    }
+                }
         		if(dev_iter->first != "torrent"){
                     properties props = download_device_information_map_[program_id][dev_iter->first];
-                    download_device* dev = dd_manager_.create_instance(dev_iter->first, props);
+                    download_device* dev = dd_manager_.create_instance(id, dev_iter->first, props);
                     if(dev) {
                         libcow::response_handler_function add_pieces_function = 
-                            boost::bind(&download_control::add_pieces, dc, _1);
+                            boost::bind(&download_control::add_pieces, dc, _1, _2);
 
                         dev->set_add_pieces_function(add_pieces_function);
                     }
@@ -298,5 +307,6 @@ void cow_client::stop_logger()
 void cow_client::register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 
                                                   const std::string& identifier)
 {
+    piece_sources_[++download_device_id_] = identifier;
     dd_manager_.register_download_device_factory(factory, identifier);
 }

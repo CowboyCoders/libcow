@@ -42,7 +42,7 @@ namespace libcow {
 		* @return download_device, a pointer to it, the new one. very good!
 		* @author crimzor
 		*/
-		virtual download_device * create(const properties& pmap) = 0;
+        virtual download_device * create(const int id, const properties& pmap) = 0;
 	};
 }
 

@@ -32,9 +32,9 @@ or implied, of CowboyCoders.
 
 using namespace libcow;
 
-download_device * multicast_server_connection_factory::create(const properties& pmap)
+download_device * multicast_server_connection_factory::create(const int id, const properties& pmap)
 {
     download_device* msc = new multicast_server_connection();
-    msc->open(pmap);
+    msc->open(id, pmap);
     return msc;
 }

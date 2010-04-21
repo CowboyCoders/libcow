@@ -74,7 +74,7 @@ namespace libcow {
 
 		// TODO: replace the second map with multimap :D
         std::map<int, std::map<std::string, properties> > download_device_information_map_;
-
+       
         download_control_map_ download_controls_;
     
 		boost::shared_ptr<boost::thread> logger_thread_ptr_;
@@ -86,6 +86,8 @@ namespace libcow {
 
         static const int default_max_num_log_messages_;
         static const int default_logging_interval_;
+        int download_device_id_;
+        std::map<int,std::string> piece_sources_;
 	};
 }
 

@@ -44,7 +44,7 @@ namespace libcow
 		* @param pmap A properties map with properties for the on_demand_server_connection
 		* @return A download_device pointer to the new on_demand_server_connection
 		*/
-        virtual download_device * create(const properties& pmap);
+        virtual download_device * create(const int id, const properties& pmap);
 	};
 }
 
