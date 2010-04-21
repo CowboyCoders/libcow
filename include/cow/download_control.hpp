@@ -58,6 +58,9 @@ namespace libcow {
 
         std::vector<boost::shared_ptr<download_device> > download_devices;
 
+        // File handle for reading the downloaded program data
+        std::ifstream file_;
+
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;
     };
