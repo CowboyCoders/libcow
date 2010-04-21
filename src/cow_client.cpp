@@ -52,8 +52,9 @@ const int cow_client::default_logging_interval_ = 1; // seconds
 
 program_info* parse_program_info(TiXmlElement* p) {
     program_info* pi = new program_info();
-    if(p->QueryIntAttribute("id", &pi->id) != TIXML_SUCCESS)
+    if(p->QueryIntAttribute("id", &pi->id) != TIXML_SUCCESS) {
         std::cerr << "Invalid program: attribute missing\n";
+    }
 
     TiXmlHandle tmp_handle(p);
     TiXmlElement* child = tmp_handle.FirstChild("name").ToElement();
