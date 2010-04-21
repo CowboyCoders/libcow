@@ -144,7 +144,6 @@ std::list<program_info> cow_client::get_program_table()
                 BOOST_LOG_TRIVIAL(warning) << "cow_client: Invalid device: attribute missing";
                 continue;
             }
-            std::cout << "type: " << type << "\n";
             TiXmlHandle tmp_handle2(child2);
             TiXmlElement* child3 = tmp_handle2.FirstChild("property").ToElement();
             properties props;
