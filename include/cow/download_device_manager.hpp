@@ -31,6 +31,8 @@ or implied, of CowboyCoders.
 
 #include <boost/shared_ptr.hpp>
 
+#include "libcow_def.hpp"
+
 namespace libcow {
 
     class LIBCOW_EXPORT download_device_manager 
