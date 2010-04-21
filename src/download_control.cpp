@@ -44,6 +44,7 @@ download_control::download_control(const libtorrent::torrent_handle& handle)
     handle_(handle)
 
 {
+    piece_origin_ = std::vector<int>(handle_.get_torrent_info().num_pieces(),0);
 }
 
 download_control::~download_control()
@@ -109,7 +110,6 @@ progress_info download_control::get_progress()
         std::cout << iter->ip << " " << iter->interesting << "; ";   
     }
     std::cout << std::endl;
-
     return progress_info(state, status.progress, handle_.status().pieces, piece_origin_);
 }
 
