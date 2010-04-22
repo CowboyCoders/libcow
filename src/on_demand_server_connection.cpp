@@ -33,7 +33,6 @@ or implied, of CowboyCoders.
 
 #include <boost/log/trivial.hpp>
 
-#include <map>
 #include <iterator>
 #include <sstream>
 
@@ -138,14 +137,21 @@ bool on_demand_server_connection::close()
     return true;
 }
 
-void on_demand_server_connection::send(const std::size_t piece_size, const std::vector<int> indices)
+void on_demand_server_connection::send(const std::map<int, std::vector<int> > indices)
 {
-    io_service.post(
-            boost::bind(&on_demand_server_connection::worker,
-                        this,
-                        connection_string_,
-                        piece_size,
-                        indices));
+    std::map<int, std::vector<int> >::const_iterator it;
+    for(it = indices.begin(); it != indices.end(); ++it)
+    {
+        int piece_size = (*it).first;
+        std::vector<int> inds = (*it).second;
+        
+        io_service.post(
+                boost::bind(&on_demand_server_connection::worker,
+                            this,
+                            connection_string_,
+                            piece_size,
+                            inds));
+    }
 }
 
 size_t libcow::curl_instance::write_data(void * buffer,
@@ -220,9 +226,6 @@ void on_demand_server_connection::worker(std::string connection_str,
         }
     }
 
-    std::cout << size_str.str() << std::endl;
-    std::cout << index_str.str() << std::endl;
-
     BOOST_LOG_TRIVIAL(debug) << "Size: " << size_str.str();
     BOOST_LOG_TRIVIAL(debug) << "Indices: " << index_str.str();
 
@@ -238,7 +241,6 @@ void on_demand_server_connection::worker(std::string connection_str,
     if(res != CURLE_OK) {
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
-        std::cout << "error 1: " << curl_easy_strerror(res) << std::endl;
         return;
     }
 
@@ -247,7 +249,6 @@ void on_demand_server_connection::worker(std::string connection_str,
     if(res != CURLE_OK) {
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
-        std::cout << "error 2: " << curl_easy_strerror(res) << std::endl;
         return;
     }
 
@@ -300,26 +301,19 @@ bool on_demand_server_connection::get_pieces(const std::vector<piece_request> & 
         return false;
     } else
     {
-        std::vector<int> indices;
-
-        std::size_t piece_size = requests[0].piece_size;
+        std::map<int,std::vector<int> > indices;
 
         std::vector<piece_request>::const_iterator it;
         for(it = requests.begin(); it != requests.end(); ++it)
         {
             piece_request req = *it;
-            if(piece_size != req.piece_size)
-            {
-                BOOST_LOG_TRIVIAL(error) << "All pieces must have the same size";
-                return false;
-            }
             for(size_t i = 0; i < req.count; ++i)
             {
-                indices.push_back(req.index+i);
+                indices[req.piece_size].push_back(req.index+i);
             }
         }
 
-        send(piece_size,indices);
+        send(indices);
         return true;
     }
 }
