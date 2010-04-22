@@ -160,7 +160,7 @@ std::list<program_info> cow_client::get_program_table()
             device_prop_map[type] = props;
         }
         prog_info_list.push_back(*pi);
-        download_device_information_map_[1] = device_prop_map;
+        download_device_information_map_[pi->id] = device_prop_map;
 	}
 	
     return prog_info_list;

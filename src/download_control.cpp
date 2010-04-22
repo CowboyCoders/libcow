@@ -115,7 +115,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
     libtorrent::torrent_info info = handle_.get_torrent_info();
     std::vector<piece_data>::const_iterator iter;
 
-
+    BOOST_LOG_TRIVIAL(debug) << "add_piece";
 
     for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
     {
@@ -222,4 +222,17 @@ void download_control::pre_buffer(const std::vector<libcow::piece_request> reque
     } else {
         BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
     }
+}
+
+void download_control::debug_print()
+{
+    libtorrent::bitfield progress = handle_.status().pieces;
+
+    libtorrent::bitfield::const_iterator iter;
+
+    std::cout << "--- PROGRESS ---" << std::endl;
+    for(iter = progress.begin(); iter != progress.end(); ++iter) {
+        std::cout << *iter;
+    }
+    std::cout << std::endl;
 }

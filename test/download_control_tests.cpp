@@ -91,11 +91,17 @@ int main(int argc, char* argv[])
     size_t buf_size = ctrl->piece_length() * 5;
     char* databuf = new char[buf_size];
     libcow::utils::buffer buffo(databuf, buf_size);
-    ctrl->read_data(ctrl->piece_length() * 25, buffo);
 
-    std::cout << "i'm happy!" << std::endl;
+    
 
-    while(true);
+    //ctrl->read_data(ctrl->piece_length() * 25, buffo);
+
+    //std::cout << "i'm happy!" << std::endl;
+
+    while(true) { 
+        ctrl->debug_print();
+        libcow::system::sleep(1000); 
+    }
 
     delete [] databuf;
 

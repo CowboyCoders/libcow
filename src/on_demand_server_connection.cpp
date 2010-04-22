@@ -234,20 +234,16 @@ void on_demand_server_connection::worker(std::string connection_str,
 
 
     if(res != CURLE_OK) {
-#ifdef DEBUG
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
-#endif
         return;
     }
 
     res = curl_easy_perform(curl_ptr->curl);
 
     if(res != CURLE_OK) {
-#ifdef DEBUG
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
-#endif
         return;
     }
 
