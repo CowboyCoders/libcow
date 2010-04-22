@@ -193,7 +193,7 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
         std::cout << std::endl;
     }
     
-    return file_handle_.gcount();
+    return static_cast<size_t>(file_handle_.gcount());
 }
 
 void download_control::pre_buffer(size_t offset, size_t length)

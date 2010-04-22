@@ -19,8 +19,11 @@ ENDIF(UNIX)
 
 set(CMAKE_BUILD_TYPE Debug)
 
-# Use static MT version of Boost
-#SET(Boost_USE_STATIC_LIBS ON)
+if(WIN32)
+    # Use static MT version of Boost
+    SET(Boost_USE_STATIC_LIBS ON)
+    SET(Boost_USE_MULTITHREAD ON)
+endif(WIN32)
 
 find_package(Boost COMPONENTS system thread log filesystem REQUIRED)
     
