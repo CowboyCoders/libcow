@@ -9,6 +9,8 @@ IF(UNIX)
         ${CURL_INCLUDE_DIR} 
         ${LIBTORRENT_INCLUDE_DIR}
     )
+
+    set(LIBCOW_LIBRARY ${LIBCOW_SOURCE_DIR}/bin/libcowd.so)
 ENDIF(UNIX)
 
 IF(UNIX)
@@ -157,8 +159,7 @@ ELSEIF(UNIX)
         ${Boost_SYSTEM_LIBRARY}
         ${Boost_LOG_LIBRARY}
     )
-    SET(TEST_DEPS ${LIBCOW_DEPS})
-    SET(TEST_DEPS ${LIBCOW_DEPS} libcow.so)
+    SET(TEST_DEPS ${LIBCOW_DEPS} ${LIBCOW_LIBRARY})
 ELSE(WIN32)
     MESSAGE(FATAL_ERROR "Unsupported OS")
 ENDIF(WIN32)
@@ -174,15 +175,9 @@ IF(WIN32)
 set_target_properties(cow PROPERTIES COMPILE_FLAGS "/EHa")
 ENDIF(WIN32)
 
-# Set this to TRUE if you want to build the tests
-# You can also pass the flag -DBUILD_TEST:BOOL=TRUE to cmake
-# i.e. cmake -DBUILD_TEST:BOOL=TRUE ..
-set(BUILD_TEST TRUE)
-
-IF(BUILD_TEST)
 # download_control test target
 add_executable(download_control_tests ${DOWNLOAD_CONTROL_TEST_SOURCE} ${HEADERS})
-target_link_libraries(download_control_tests ${TEST_DEPS})
+target_link_libraries(download_control_tests ${TEST_DEPS}) 
 add_dependencies(download_control_tests cow)
 
 # download_device test target
@@ -199,4 +194,3 @@ add_dependencies(multicast_server_connection_tests cow)
 add_executable(curl_instance_tests ${CURL_INSTANCE_TEST_SOURCE} ${HEADERS})
 target_link_libraries(curl_instance_tests ${TEST_DEPS})
 add_dependencies(curl_instance_tests cow)
-ENDIF(BUILD_TEST)

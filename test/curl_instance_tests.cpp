@@ -26,7 +26,7 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of CowboyCoders.
 */
 
-#include "cow/cow.hpp"
+#include <cow/cow.hpp>
 
 #include <iostream>
 #include <string>

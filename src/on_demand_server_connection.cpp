@@ -224,6 +224,9 @@ void on_demand_server_connection::worker(std::string connection_str,
         }
     }
 
+    BOOST_LOG_TRIVIAL(debug) << "Size: " << size_str.str();
+    BOOST_LOG_TRIVIAL(debug) << "Indices: " << index_str.str();
+
     struct curl_slist *chunk = NULL;
     chunk = curl_slist_append(chunk, size_str.str().c_str());
     chunk = curl_slist_append(chunk, index_str.str().c_str());

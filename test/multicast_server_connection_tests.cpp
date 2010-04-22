@@ -26,13 +26,14 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of CowboyCoders.
 */
 
-#include "cow/cow.hpp"
-#include "cow/multicast_server_connection.hpp"
+#include <cow/cow.hpp>
+#include <cow/multicast_server_connection.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <libtorrent/hasher.hpp>
 
-void add_pieces_callback(std::vector<libcow::piece_data> pieces) {
+
+void add_pieces_callback(int id, std::vector<libcow::piece_data> pieces) {
     BOOST_LOG_TRIVIAL(info) << "Receiving pieces: ";
 
     std::vector<libcow::piece_data>::iterator it;
@@ -62,9 +63,9 @@ int main()
     settings["packet_size"] = "1024";
     settings["piece_size"] = "262144";
 
-    test_connection.open(settings); // It seems that we must open the device before setting the callback
+    test_connection.open(1, settings); // It seems that we must open the device before setting the callback
 
-    test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1));
+    test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1,_2));
 
     while(true) {
         BOOST_LOG_TRIVIAL(info) << "Waiting...";

@@ -26,15 +26,15 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of CowboyCoders.
 */
 
-#include "cow/cow.hpp"
-
 #include <iostream>
 #include <map>
 #include <boost/function.hpp>
 #include <boost/log/trivial.hpp>
 #include <libtorrent/hasher.hpp>
+#include <cow/cow.hpp>
 
-void add_pieces_callback(std::vector<libcow::piece_data> pieces) {
+
+void add_pieces_callback(int id, std::vector<libcow::piece_data> pieces) {
     BOOST_LOG_TRIVIAL(info) << "Receiving pieces: ";
     std::vector<libcow::piece_data>::iterator it;
     for(it = pieces.begin(); it != pieces.end(); ++it) {
@@ -74,7 +74,7 @@ int main()
     test_connection.open(1, settings);
     print_connection_state(test_connection);
 
-    test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1));
+    test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1,_2));
 
     std::vector<libcow::piece_request> requests;
 

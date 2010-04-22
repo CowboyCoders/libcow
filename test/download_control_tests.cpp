@@ -32,7 +32,7 @@ or implied, of CowboyCoders.
 #include <boost/shared_ptr.hpp>
 #include <libtorrent/session.hpp>
 
-#include "cow/cow.hpp"
+#include <cow/cow.hpp>
 
 int main(int argc, char* argv[])
 {
