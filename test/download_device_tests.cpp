@@ -66,9 +66,9 @@ int main()
     BOOST_LOG_TRIVIAL(info) << "Opening connection...";
 
     libcow::properties settings;
-    settings["address"] = "cowboycoders.se";
+    settings["address"] = "cowboy_coders";
     settings["port"] = "22234";
-    settings["file"] = "big_buck_bunny";
+    settings["file"] = "big_buck_bunny.mpg";
     settings["max_simultaneous_downloads"] = "3";
 
     test_connection.open(1, settings);
@@ -78,8 +78,8 @@ int main()
 
     std::vector<libcow::piece_request> requests;
 
-    for(int i = 0; i < 100; i += 10) {
-        requests.push_back(libcow::piece_request(256*1024,i,10));
+    for(int i = 0; i < 10; i += 1) {
+        requests.push_back(libcow::piece_request(150,i,1));
     }
 
     test_connection.get_pieces(requests);

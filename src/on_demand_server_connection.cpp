@@ -154,20 +154,16 @@ size_t libcow::curl_instance::write_data(void * buffer,
                                          void *userp)
 {
     if(size != 1) {
-#ifdef DEBUG
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << "chunk size not 1";
-#endif
         return 0;
     }
 
     libcow::buffer_wrapper * wrapper = (libcow::buffer_wrapper*)userp;
 
     if(wrapper->bytes_written + nmemb > wrapper->buf_size) {
-#ifdef DEBUG
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << "buffer overflow";
-#endif
         return 0;
     }
 
@@ -224,6 +220,9 @@ void on_demand_server_connection::worker(std::string connection_str,
         }
     }
 
+    std::cout << size_str.str() << std::endl;
+    std::cout << index_str.str() << std::endl;
+
     BOOST_LOG_TRIVIAL(debug) << "Size: " << size_str.str();
     BOOST_LOG_TRIVIAL(debug) << "Indices: " << index_str.str();
 
@@ -239,6 +238,7 @@ void on_demand_server_connection::worker(std::string connection_str,
     if(res != CURLE_OK) {
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
+        std::cout << "error 1: " << curl_easy_strerror(res) << std::endl;
         return;
     }
 
@@ -247,6 +247,7 @@ void on_demand_server_connection::worker(std::string connection_str,
     if(res != CURLE_OK) {
         BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
                 << curl_easy_strerror(res);
+        std::cout << "error 2: " << curl_easy_strerror(res) << std::endl;
         return;
     }
 
