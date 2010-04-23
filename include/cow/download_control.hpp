@@ -50,6 +50,8 @@ namespace libcow {
         size_t read_data(size_t offset, libcow::utils::buffer& buffer);
         bool has_data(size_t offset, size_t length);
 
+        void set_playback_position(size_t offset);
+
 		int piece_length();
 		
         void add_pieces(int id, const std::vector<libcow::piece_data>& pieces);

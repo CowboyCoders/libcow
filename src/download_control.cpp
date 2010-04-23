@@ -147,7 +147,10 @@ bool download_control::has_data(size_t offset, size_t length)
     
 	size_t piece_start = offset / piece_size;
 	size_t piece_end = (offset + length - 1) / piece_size;
-    
+
+    //std::cout << "HASDATA SAYS: piece_start: " << piece_start
+    //          << " piece_end: " << piece_end << std::endl;
+
     if ((int)piece_end >= info.num_pieces() || (int)piece_start >= info.num_pieces()){
         throw std::out_of_range("has_data: piece index out of range");
 	}
@@ -235,4 +238,25 @@ void download_control::debug_print()
         std::cout << *iter;
     }
     std::cout << std::endl;
+}
+
+void download_control::set_playback_position(size_t offset)
+{
+    // get an up to date list of random access devices
+    std::vector<boost::shared_ptr<download_device> > random_access_devices;
+
+    std::vector<boost::shared_ptr<download_device> >::iterator it;
+
+    for(it = download_devices.begin(); it != download_devices.end(); ++it)
+    {
+        download_device* dev = it->get();
+        if(dev && dev->is_random_access()) {
+            random_access_devices.push_back(*it);
+        }
+    }
+
+    // load balancer
+
+
+
 }

@@ -76,36 +76,32 @@ int main(int argc, char* argv[])
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
     
     for(int i = 0; i < 2; ++i) {
-        ctrl->get_progress();
         libcow::progress_info progress_info = ctrl->get_progress();
         std::cout << "State: " << progress_info.state_str() 
             << ", Progress: " << (progress_info.progress() * 100.0) 
             << "%" << std::endl;
         libcow::system::sleep(1000);
     }
-
+    /*
     std::vector<libcow::piece_request> reqs;
-    reqs.push_back(libcow::piece_request(ctrl->piece_length(),25,5));
-    ctrl->pre_buffer(reqs);
-
-    size_t buf_size = ctrl->piece_length() * 5;
-    char* databuf = new char[buf_size];
-    libcow::utils::buffer buffo(databuf, buf_size);
-
-    
-
-    //ctrl->read_data(ctrl->piece_length() * 25, buffo);
-
-    //std::cout << "i'm happy!" << std::endl;
+    reqs.push_back(libcow::piece_request(ctrl->piece_length(),0,1));
+    reqs.push_back(libcow::piece_request(ctrl->piece_length(),5,1));
+    reqs.push_back(libcow::piece_request(ctrl->piece_length(),10,3));
+    reqs.push_back(libcow::piece_request(ctrl->piece_length(),150,2));
+    */
+    //ctrl->set_playback_position(0);
 
     while(true) { 
         ctrl->debug_print();
+        libcow::progress_info progress_info = ctrl->get_progress();
+        std::cout << "State: " << progress_info.state_str() 
+            << ", Progress: " << (progress_info.progress() * 100.0) 
+            << "%" << std::endl;
         libcow::system::sleep(1000); 
     }
-
-    delete [] databuf;
 
     client.stop_download(1);
 
     return 0;
 }
+    

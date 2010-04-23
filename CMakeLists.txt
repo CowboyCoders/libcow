@@ -154,7 +154,7 @@ IF(WIN32)
         debug libcurl
         optimized libcurl
         )
-    SET(TEST_DEPS ${LIBCOW_DEPS} cowd.lib)
+    SET(TEST_DEPS ${LIBCOW_DEPS} debug cowd optimized cow)
 ELSEIF(UNIX)
     SET(LIBCOW_DEPS
         ${CURL_LIBRARY}

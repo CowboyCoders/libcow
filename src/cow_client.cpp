@@ -76,7 +76,6 @@ cow_client::cow_client()
     //TODO: change this to configurable log levels
 	session_.set_alert_mask(libtorrent::alert::progress_notification |
 							libtorrent::alert::storage_notification);
-
     libtorrent::session_settings settings;
     settings.user_agent = "cow_agent";
     settings.allowed_fast_set_size = 1000; // 1000 pieces without choking
