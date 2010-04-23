@@ -170,31 +170,33 @@ bool download_control::has_data(size_t offset, size_t length)
 
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 {
-    // FIXME: reads from file with index 0 ONLY!
-    libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-    std::string filename = file_entry.path.filename();
-
-    std::cout << "filename: " << filename << std::endl;
-
-    std::cout << "offset: " << offset << " bufsize: " << buffer.size() << std::endl;
-
 	while(!has_data(offset, buffer.size())){
         libcow::system::sleep(10);
     }
 
-    if(!file_handle_) {
+    if(!file_handle_.is_open()) {
+        // FIXME: reads from file with index 0 ONLY!
+        libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
+        std::string filename = file_entry.path.filename();
+
+#if 0
+        std::cout << "filename: " << filename << std::endl;
+        std::cout << "offset: " << offset << " bufsize: " << buffer.size() << std::endl;
+#endif
+
         file_handle_.open(filename.c_str(), std::ios_base::in | std::ios_base::binary);
-        if(!file_handle_) {
+        if(!file_handle_.is_open()) {
             BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << filename;
             return 0;
         }
-
-        file_handle_.seekg(offset);
-        file_handle_.read(buffer.data(), buffer.size());
-
+#if 0
         std::cout << "READ DATA!" << std::endl;
         std::cout << std::endl;
+#endif
     }
+
+    file_handle_.seekg(offset);
+    file_handle_.read(buffer.data(), buffer.size());
     
     return static_cast<size_t>(file_handle_.gcount());
 }

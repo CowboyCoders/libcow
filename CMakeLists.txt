@@ -151,7 +151,7 @@ IF(WIN32)
         winmm
         wldap32
 
-        debug libcurl
+        debug libcurld
         optimized libcurl
         )
     SET(TEST_DEPS ${LIBCOW_DEPS} debug cowd optimized cow)
