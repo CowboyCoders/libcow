@@ -38,17 +38,21 @@ or implied, of CowboyCoders.
 #include <libtorrent/peer_info.hpp>
 
 #include <iostream>
+#include <time.h>
+#include <cstdlib>
 
 using namespace libcow;
 
-int download_control::default_critical_window = 10;
-
-download_control::download_control(const libtorrent::torrent_handle& handle)
+download_control::download_control(const libtorrent::torrent_handle& handle, 
+                                   int critical_window_length,
+                                   int critical_window_timeout)
     : piece_sources_(0),
-    critical_window_(default_critical_window),
-    handle_(handle)
+    critical_window_(critical_window_length),
+    handle_(handle),
+    disp_(critical_window_timeout) //TODO: 
 
 {
+    srand (time(NULL));
     piece_origin_ = std::vector<int>(handle_.get_torrent_info().num_pieces(),0);
 }
 
@@ -332,5 +336,40 @@ void download_control::set_playback_position(size_t offset)
         handle_.piece_priority(idx, 7);
     }
 
-    // TODO: add load balancer
+    
+    if(random_access_devices.size() > 0) {
+        // load balancing
+        int device_index = rand() % random_access_devices.size();
+
+        download_device* dev = random_access_devices[device_index];
+        disp_.post_delayed(
+            boost::bind(&download_control::fetch_missing_pieces, this, 
+                        dev, 
+                        first_piece_to_prioritize, 
+                        first_piece_to_prioritize + critical_window() - 1, 
+                        _1));
+    }
+}
+
+void download_control::fetch_missing_pieces(download_device* dev, 
+                                            int first_piece, 
+                                            int last_piece, 
+                                            boost::system::error_code& error)
+{
+    BOOST_LOG_TRIVIAL(debug) << "Falling back to random access download devices";
+    assert(last_piece >= first_piece);
+    
+    libtorrent::bitfield pieces = handle_.status().pieces;
+
+    assert(last_piece < pieces.size());
+
+    std::vector<libcow::piece_request> reqs;
+
+    for(int i = first_piece; i <= last_piece; ++i) {
+        if(!pieces[i]) { // request only pieces we don't have
+            reqs.push_back(libcow::piece_request(piece_length(), i, 1));
+        }
+    }
+
+    dev->get_pieces(reqs);
 }

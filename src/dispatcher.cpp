@@ -34,9 +34,10 @@ or implied, of CowboyCoders.
 
 using namespace libcow;
 
-dispatcher::dispatcher()
+dispatcher::dispatcher(int timer_delay)
     : work(io_service),
-      thread(boost::bind(&boost::asio::io_service::run, &io_service))
+      thread(boost::bind(&boost::asio::io_service::run, &io_service)),
+      deadline_timer(io_service, boost::posix_time::milliseconds(timer_delay))
 {
 
 }

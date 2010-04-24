@@ -189,7 +189,7 @@ download_control* cow_client::start_download(const libcow::program_info& program
     }
 
     // Create a new download_control
-    download_control* download = new libcow::download_control(torrent);
+    download_control* download = new libcow::download_control(torrent, 5, 5000); // FIXME: no magic numbers please :)
     download->piece_sources_ =  &piece_sources_;
 
     for (device_it = program.download_devices.begin(); 

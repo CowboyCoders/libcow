@@ -86,13 +86,7 @@ int main(int argc, char* argv[])
             << "%" << std::endl;
         libcow::system::sleep(1000);
     }
-    /*
-    std::vector<libcow::piece_request> reqs;
-    reqs.push_back(libcow::piece_request(ctrl->piece_length(),0,1));
-    reqs.push_back(libcow::piece_request(ctrl->piece_length(),5,1));
-    reqs.push_back(libcow::piece_request(ctrl->piece_length(),10,3));
-    reqs.push_back(libcow::piece_request(ctrl->piece_length(),150,2));
-    */
+
     ctrl->set_playback_position(20*256*1024);
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;

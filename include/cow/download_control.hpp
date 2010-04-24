@@ -54,7 +54,9 @@ namespace libcow {
         * @param handle The torrent_handle which controls the BitTorrent
         * part of the download.
         */
-        download_control(const libtorrent::torrent_handle& handle);
+        download_control(const libtorrent::torrent_handle& handle, 
+                         int critical_window_length,
+                         int critical_window_timeout);
         ~download_control();
 
        /**
@@ -161,7 +163,12 @@ namespace libcow {
 
         void debug_print();
 
-    private:           
+    private:
+        void fetch_missing_pieces(download_device* dev, 
+                                  int first_piece, 
+                                  int last_piece, 
+                                  boost::system::error_code& error);
+
         std::map<int,std::string> * piece_sources_;
         std::vector<int> piece_origin_;
         libtorrent::torrent_handle handle_;
@@ -173,7 +180,6 @@ namespace libcow {
         dispatcher disp_;
 
         int critical_window_;
-        static int default_critical_window;
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;

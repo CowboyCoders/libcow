@@ -52,7 +52,7 @@ namespace libcow {
         * created, the dispatcher immediately starts processing any incoming
         * jobs (use the dispatcher::post method to put a job on the queue).
         */
-        dispatcher();
+        dispatcher(int timer_delay);
 
        /**
         * Stops processing jobs and then destructs the dispatcher. Note that
@@ -73,12 +73,27 @@ namespace libcow {
             io_service.post(handler);
         }
 
+        /**
+        * Adds an argument-less function object to the job queue.
+        * It's safe to call this function from multiple threads.
+        * The (asynchronous) invocation of the function object will be 
+        * delayed by the specified number of milliseconds.
+        * @param handler A function object, perhaps created using boost::bind.
+        * @param delay The number of milliseconds to wait before invocation.
+        */
+        template<typename CompletionHandler>
+        void post_delayed(const CompletionHandler& handler)
+        {
+            deadline_timer.async_wait(handler);
+        }
+
      private:
 
         // don't reorder these!
         boost::asio::io_service io_service;
         boost::asio::io_service::work work;
         boost::thread thread;
+        boost::asio::deadline_timer deadline_timer;
     };
 }
 #endif // ___dispatcher_h___
