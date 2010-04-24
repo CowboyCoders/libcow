@@ -35,13 +35,17 @@ or implied, of CowboyCoders.
 #include "cow/system.hpp"
 
 #include <boost/log/trivial.hpp>
+#include <libtorrent/peer_info.hpp>
 
 #include <iostream>
 
 using namespace libcow;
 
+int download_control::default_critical_window = 10;
+
 download_control::download_control(const libtorrent::torrent_handle& handle)
     : piece_sources_(0),
+    critical_window_(default_critical_window),
     handle_(handle)
 
 {
@@ -122,9 +126,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
         if((int)iter->data.size() != info.piece_size(iter->index)) {
             BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                 << "trying to add piece with index " << iter->index
-                << "and size " << iter->data.size() << ", but expected size is "
+                << " and size " << iter->data.size() << ", but expected size is "
                 << info.piece_size(iter->index);
-            return; //TODO: throw exception here?
+            continue;
         }
         disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
         handle_.add_piece(iter->index, iter->data.data());
@@ -177,7 +181,7 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     if(!file_handle_.is_open()) {
         // FIXME: reads from file with index 0 ONLY!
         libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-        std::string filename = file_entry.path.filename();
+    std::string filename = file_entry.path;
 
 #if 0
         std::cout << "filename: " << filename << std::endl;
@@ -244,8 +248,10 @@ void download_control::debug_print()
 
 void download_control::set_playback_position(size_t offset)
 {
+    assert(offset >= 0);
+
     // get an up to date list of random access devices
-    std::vector<boost::shared_ptr<download_device> > random_access_devices;
+    std::vector<download_device*> random_access_devices;
 
     std::vector<boost::shared_ptr<download_device> >::iterator it;
 
@@ -253,12 +259,24 @@ void download_control::set_playback_position(size_t offset)
     {
         download_device* dev = it->get();
         if(dev && dev->is_random_access()) {
-            random_access_devices.push_back(*it);
+            random_access_devices.push_back(dev);
         }
     }
 
-    // load balancer
+    // create a vector of pieces to prioritize
+    int first_piece_to_prioritize = offset / piece_length();
 
+    std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
 
+    // set low priority for pieces before playback position
+    for(int i = 0; i < first_piece_to_prioritize; ++i) {
+        handle_.piece_priority(i, 1);
+    }
 
+    // set high priority for pieces in critical window
+    for(int i = 0; i < critical_window(); ++i) {
+        handle_.piece_priority(first_piece_to_prioritize + i, 7);
+    }
+
+    // TODO: add load balancer
 }

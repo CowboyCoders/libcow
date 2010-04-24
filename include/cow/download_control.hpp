@@ -132,6 +132,16 @@ namespace libcow {
         */
         void add_download_device(download_device* dd);
 
+        int critical_window()
+        {
+            return critical_window_;
+        }
+
+        void set_critical_window(int num_pieces)
+        {
+            critical_window_ = num_pieces;
+        }
+
         void debug_print();
 
     private:           
@@ -144,6 +154,9 @@ namespace libcow {
         std::ifstream file_handle_;
 
         dispatcher disp_;
+
+        int critical_window_;
+        static int default_critical_window;
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;

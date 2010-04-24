@@ -52,6 +52,7 @@ set(LIBCOW_SOURCE
     ${LIBCOW_SOURCE_DIR}/src/tinyxml.cpp
     ${LIBCOW_SOURCE_DIR}/src/tinyxmlerror.cpp
     ${LIBCOW_SOURCE_DIR}/src/tinyxmlparser.cpp
+    ${LIBCOW_SOURCE_DIR}/src/program_table.cpp
     ${PACKETIZER_SOURCE_DIR}/packetizer.cpp
 )
 
@@ -77,6 +78,7 @@ set(LIBCOW_HEADERS
     ${LIBCOW_SOURCE_DIR}/include/cow/program_sources.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/program_table_server_connection.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/progress_info.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/program_table.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/system.hpp
 )
 
@@ -132,7 +134,6 @@ IF(WIN32)
         -DBOOST_ALL_NO_LIB
         -DTORRENT_BUILDING_SHARED
         -DTORRENT_DEBUG
-        -DTORRENT_DISABLE_ENCRYPTION
         -DTORRENT_DISABLE_GEO_IP
         -DTORRENT_DISABLE_INVARIANT_CHECKS
     )

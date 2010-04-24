@@ -32,6 +32,7 @@ or implied, of CowboyCoders.
 #include <libtorrent/session.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include "cow/download_device_manager.hpp"

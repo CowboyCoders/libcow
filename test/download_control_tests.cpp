@@ -93,7 +93,9 @@ int main(int argc, char* argv[])
     reqs.push_back(libcow::piece_request(ctrl->piece_length(),10,3));
     reqs.push_back(libcow::piece_request(ctrl->piece_length(),150,2));
     */
-    //ctrl->set_playback_position(0);
+    ctrl->set_playback_position(20*256*1024);
+
+    std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
     while(true) { 
         ctrl->debug_print();
