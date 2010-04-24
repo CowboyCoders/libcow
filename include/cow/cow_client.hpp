@@ -37,27 +37,86 @@ or implied, of CowboyCoders.
 
 namespace libcow {    
 
-    /*
-     *
-     */
+   /**
+    * The purpose of this class is to serve as an API that an external
+    * client (e.g. a video player) might use for downloading data from
+    * multiple sources. As of current, all file handling is done inside
+    * libtorrent. This class can register download_device factories from
+    * any source that properly implements the download_device interface,
+    * and thus theoretically can be extended with new sources such as FTP,
+    * local file storage etc.
+    */
     class LIBCOW_EXPORT cow_client 
     {
     public:
+       /**
+        * Creates a new cow_client and initializes a lot of variables.
+        * Since BitTorrent is used as well, choking is also disabled in
+        * this constructor.
+        */
         cow_client(); // TODO: Require download_directory  ?
         ~cow_client();
 
+       /**
+        * This function sets download directory to download files to. This
+        * path will also be used by libtorrent.
+        * @param path The path to the download directory.
+        */
         void set_download_directory(const std::string& path);
+       /**
+        * This function sets which port to use for BitTorrent connections.
+        * @param port The port to use.
+        */
         void set_bittorrent_port(int port);
 
+       /**
+        * This functions downloads an XML file from a server which contains
+        * information about the program table. The XML will be parsed for
+        * information about which videos can be viewed in the system, and what
+        * download_devices and their corresponding settings are.
+        * @return A list of program_info structs, which contains information about each program.
+        */
         std::list<libcow::program_info> get_program_table();
-        
+
+       /**
+        * This function will start downloading the selected program using BitTorrent.
+        * If any download_devices have been registered using register_download_device_factory,
+        * the client will initialize these devices and start gathering data from them as well.
+        * @param program_id The id of the program to start downloading.
+        * @return A pointer to the download_control used for this program.
+        */
         download_control* start_download(int program_id);
+
+       /**
+        * This function returns the download_control for a certain program.
+        * @param program_id The id of the program to return a download_control for.
+        * @return A pointer to the download_control for the specified program.
+        */
         download_control* get_download(int program_id);
+
+       /**
+        * This function will stop the download of the specified program, and
+        * erase the associated download_control.
+        * @param program_id The id of the program to stop downloading.
+        */
         void stop_download(int program_id);
         
+       /**
+        * This function starts the logger for this class in a new thread.
+        */
 		void start_logger();
+
+       /**
+        * This function stops the logger for this class.
+        */
 		void stop_logger();
 
+       /**
+        * This function registers a new download_device_factory which can be used
+        * for creating new download_devices.
+        * @param factory A boost::shared_ptr to the factory to register.
+        * @param identifier A string describing the download_device, e.g. "http", "multicast" etc.
+        */
         void register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 
                                               const std::string& identifier); 
 

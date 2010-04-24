@@ -53,9 +53,18 @@ namespace libcow
          }
      };
 
+    /**
+     * A small buffer wrapper used for curl calls. Can be used for keeping
+     * track of the number of bytes written to the buffer.
+     */
      struct buffer_wrapper 
          : public boost::noncopyable
      {
+         /**
+          * Creates a new buffer_wrapper and initializes the buffer. The
+          * bytes_written variable will be initialized to 0.
+          * @param size The size of the buffer to use.
+          */
          buffer_wrapper(size_t size)
              : buf_size(size), bytes_written(0)
          {
@@ -66,9 +75,20 @@ namespace libcow
          {
              delete [] buffer;
          }
-     
+
+         /**
+          * The actual data buffer.
+          */
          char* buffer;
+
+        /**
+         * The size of the buffer in bytes.
+         */
          size_t buf_size;
+
+        /**
+         * The number of bytes written to the buffer.
+         */
          size_t bytes_written;
      };
 

@@ -37,9 +37,9 @@ namespace libcow {
     */
     struct program_info 
     {
-        int id; // auto increment 
-        std::string name; // Big Tits 2
-        std::string description; // A man is walking his female dog...
+        int id;
+        std::string name;
+        std::string description;
     };
 }
 #endif // ___libcow_program_info___

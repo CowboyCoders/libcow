@@ -34,7 +34,7 @@ namespace libcow {
      * Progress info class. Contains information regarding
      * the progress of some download.
      */
-    struct progress_info
+    struct LIBCOW_EXPORT progress_info
     {
         enum torrent_state {
             unknown,
@@ -47,7 +47,13 @@ namespace libcow {
             seeding,
             allocating
         };
-
+       /**
+        * Creates a new progress_info and initializes all variables.
+        * @param state The current state of the download progress.
+        * @param progress The download progress in percent.
+        * @param downloaded A bitfield describing whether or not each piece has been downloaded.
+        * @param piece_origin A vector describing where each piece originates from.
+        */
         progress_info(torrent_state state,
                       float progress,
                       libtorrent::bitfield downloaded,
@@ -58,27 +64,49 @@ namespace libcow {
               piece_origin_(piece_origin)
         {
         }
-
+       /**
+        * Returns the total download progress in percent.
+        * @return A value in the range [0, 1] that indicates the progress of the torrent.
+        */
         float progress()
         {
             return progress_;
         }
 
+       /**
+        * This function returns the string representation of the BitTorrent download process.
+        * @return A string with the current state.
+        */
         std::string state_str()
         {
             return state2str();
         }
 
+       /**
+        * This function returns the current of the BitTorrent download process.
+        * @return An enum torrent_state with the current state.
+        */
         torrent_state state()
         {
             return state_;
         }
 
+       /**
+        * Returns a bitfield with information about which pieces have been downloaded.
+        * @return A bitfield where 1 = piece is downloaded, 0 = piece is not downloaded.
+        */
         libtorrent::bitfield downloaded()
         {
             return downloaded_;
         }
 
+       /**
+        * This function returns information about which source each piece originates from.
+        * The number for each source is determined by in which order the download_device
+        * factories is registered.
+        * @return A vector of piece_origins, where 0 = default(BitTorrent), and subsequent numbers
+        * determined by registering download_device factories.
+        */
         const std::vector<int>& piece_origin() const
         {
             return piece_origin_;
