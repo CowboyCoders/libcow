@@ -48,12 +48,12 @@ namespace libcow {
 
         void set_download_directory(const std::string& path);
         void set_bittorrent_port(int port);
+       
+        download_control* start_download(const libcow::program_info& program);
 
-        std::list<libcow::program_info> get_program_table();
-        
-        download_control* start_download(int program_id);
-        download_control* get_download(int program_id);
-        void stop_download(int program_id);
+        const std::list<download_control*>& get_active_downloads() const;
+
+        void remove_download(download_control* download);
         
 		void start_logger();
 		void stop_logger();
