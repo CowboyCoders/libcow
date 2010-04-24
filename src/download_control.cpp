@@ -60,52 +60,47 @@ progress_info download_control::get_progress()
 {
     libtorrent::torrent_status status = handle_.status();
 
-    std::cout << "download rate: "  
-              << status.download_rate / 1048576.0 << " MiB/s"
-              << " | upload rate: " 
-              << status.upload_rate / 1048576.0 << " MiB/s"
-			  << " | seeds: " << status.list_seeds
-		 	  << " | peers: " << status.list_peers << std::endl;
-
-    progress_info::torrent_state state;
-    switch (status.state) {
-    case libtorrent::torrent_status::allocating: 
-        state = progress_info::allocating; 
-        break;
-    case libtorrent::torrent_status::checking_files: 
-        state = progress_info::checking_files; 
-        break;
-    case libtorrent::torrent_status::checking_resume_data: 
-        state = progress_info::checking_resume_data; 
-        break;
-    case libtorrent::torrent_status::downloading: 
-        state = progress_info::downloading;
-        break;
-    case libtorrent::torrent_status::downloading_metadata: 
-        state = progress_info::downloading_metadata; 
-        break;
-    case libtorrent::torrent_status::finished:
-        state = progress_info::finished; 
-        break;
-    case libtorrent::torrent_status::queued_for_checking:
-        state = progress_info::queued_for_checking; 
-        break;
-    case libtorrent::torrent_status::seeding:
-        state = progress_info::seeding; 
-        break;
-    default:
-        state = progress_info::unknown;
+    if(status.state == libtorrent::torrent_status::downloading) 
+    {
+        return progress_info(progress_info::downloading, status.progress, status.pieces, piece_origin_);
     }
-	
-    std::vector<libtorrent::peer_info> peers;
-    handle_.get_peer_info(peers);
-    std::vector<libtorrent::peer_info>::iterator iter;
-    std::cout << "interesting? ";
-    for(iter = peers.begin(); iter != peers.end(); ++iter) {
-        std::cout << iter->ip << " " << iter->interesting << "; ";   
+    // return an all-true bitfield if we're seeding
+    else if(status.state == libtorrent::torrent_status::seeding) 
+    {
+        libtorrent::bitfield all_true(num_pieces(), true);
+        return progress_info(progress_info::seeding, status.progress, all_true, piece_origin_);
     }
-    std::cout << std::endl;
-    return progress_info(state, status.progress, handle_.status().pieces, piece_origin_);
+    // return an all-false bitfield in all other cases
+    else
+    {
+        progress_info::torrent_state state;
+        switch(status.state)
+        {
+        case libtorrent::torrent_status::allocating: 
+            state = progress_info::allocating; 
+            break;
+        case libtorrent::torrent_status::checking_files: 
+            state = progress_info::checking_files; 
+            break;
+        case libtorrent::torrent_status::checking_resume_data: 
+            state = progress_info::checking_resume_data; 
+            break;
+        case libtorrent::torrent_status::downloading_metadata: 
+            state = progress_info::downloading_metadata; 
+            break;
+        case libtorrent::torrent_status::finished:
+            state = progress_info::finished; 
+            break;
+        case libtorrent::torrent_status::queued_for_checking:
+            state = progress_info::queued_for_checking; 
+            break;
+        default:
+            state = progress_info::unknown;
+        }
+    	
+        libtorrent::bitfield all_false(num_pieces());
+        return progress_info(state, status.progress, all_false, piece_origin_);
+    }
 }
 
 int download_control::piece_length()
@@ -235,15 +230,37 @@ void download_control::pre_buffer(const std::vector<libcow::piece_request> reque
 
 void download_control::debug_print()
 {
-    libtorrent::bitfield progress = handle_.status().pieces;
+    progress_info info = get_progress();
+    libtorrent::bitfield progress = info.downloaded();
 
-    libtorrent::bitfield::const_iterator iter;
+    std::cout << "num_pieces: " << num_pieces() << std::endl;
+    std::cout << "progress.size: " << progress.size() << std::endl;
+
+    libtorrent::bitfield::const_iterator bitfield_iter;
 
     std::cout << "--- PROGRESS ---" << std::endl;
-    for(iter = progress.begin(); iter != progress.end(); ++iter) {
-        std::cout << *iter;
+    for(bitfield_iter = progress.begin(); bitfield_iter != progress.end(); ++bitfield_iter) {
+        std::cout << *bitfield_iter;
     }
     std::cout << std::endl;
+
+    std::vector<libtorrent::peer_info> peers;
+    handle_.get_peer_info(peers);
+    std::vector<libtorrent::peer_info>::iterator peer_iter;
+    std::cout << "interesting? ";
+    for(peer_iter = peers.begin(); peer_iter != peers.end(); ++peer_iter) {
+        std::cout << peer_iter->ip << " " << peer_iter->interesting << "; ";   
+    }
+    std::cout << std::endl;
+
+    libtorrent::torrent_status status = handle_.status();
+    std::cout << "download rate: "  
+              << status.download_rate / 1048576.0 << " MiB/s"
+              << " | upload rate: " 
+              << status.upload_rate / 1048576.0 << " MiB/s"
+			  << " | seeds: " << status.list_seeds
+		 	  << " | peers: " << status.list_peers << std::endl;
+
 }
 
 void download_control::set_playback_position(size_t offset)

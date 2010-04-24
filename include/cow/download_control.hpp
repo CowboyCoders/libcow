@@ -64,6 +64,14 @@ namespace libcow {
         */
         progress_info get_progress();
 
+        /**
+         * @return The number of pieces in the torrent associated with this
+         * download_control.
+         */
+        int num_pieces() 
+        {
+            return handle_.get_torrent_info().num_pieces();
+        }
 
         void pre_buffer(size_t offset, size_t length);
 
@@ -99,6 +107,13 @@ namespace libcow {
         */
         bool has_data(size_t offset, size_t length);
 
+        /**
+         * This function sets the current playback position. The piece at
+         * 'offset' and a few of the following pieces will be prioritized 
+         * for download. The number of pieces to prioritize is set by calling
+         * set_critical_window.
+         * @param offset The byte offset of the current playback position.
+         */
         void set_playback_position(size_t offset);
 
        /**
