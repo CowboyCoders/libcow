@@ -29,6 +29,8 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_program_info___
 #define ___libcow_program_info___
 
+#include "cow/libcow_types.hpp"
+
 namespace libcow {
 
     /**
@@ -51,6 +53,7 @@ namespace libcow {
         * The description of the program.
         */
         std::string description;
+        libcow::device_map download_devices;
     };
 }
 #endif // ___libcow_program_info___

@@ -32,6 +32,7 @@ or implied, of CowboyCoders.
 #include <libtorrent/session.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "cow/download_device_manager.hpp"
 
@@ -63,20 +64,30 @@ namespace libcow {
         * @param path The path to the download directory.
         */
         void set_download_directory(const std::string& path);
+
        /**
         * This function sets which port to use for BitTorrent connections.
         * @param port The port to use.
         */
         void set_bittorrent_port(int port);
+       
+        
+       /**
+        * This function returns the download_control for a certain program.
+        * @param program A program info struct.
+        * @return A pointer to the download_control for the specified program.
+        */
+        download_control* start_download(const libcow::program_info& program);
+
+        const std::list<download_control*>& get_active_downloads() const;
+
 
        /**
-        * This functions downloads an XML file from a server which contains
-        * information about the program table. The XML will be parsed for
-        * information about which videos can be viewed in the system, and what
-        * download_devices and their corresponding settings are.
-        * @return A list of program_info structs, which contains information about each program.
+        * This function will stop the download of the specified program, and
+        * erase the associated download_control.
+        * @param download A pointer to the download_control instance.
         */
-        std::list<libcow::program_info> get_program_table();
+        void remove_download(download_control* download);
 
        /**
         * This function will start downloading the selected program using BitTorrent.
@@ -85,22 +96,6 @@ namespace libcow {
         * @param program_id The id of the program to start downloading.
         * @return A pointer to the download_control used for this program.
         */
-        download_control* start_download(int program_id);
-
-       /**
-        * This function returns the download_control for a certain program.
-        * @param program_id The id of the program to return a download_control for.
-        * @return A pointer to the download_control for the specified program.
-        */
-        download_control* get_download(int program_id);
-
-       /**
-        * This function will stop the download of the specified program, and
-        * erase the associated download_control.
-        * @param program_id The id of the program to stop downloading.
-        */
-        void stop_download(int program_id);
-        
        /**
         * This function starts the logger for this class in a new thread.
         */
@@ -121,20 +116,15 @@ namespace libcow {
                                               const std::string& identifier); 
 
     private:
+        libtorrent::torrent_handle create_torrent_handle(const properties& props);
         void logger_thread_function();
 
+        typedef boost::ptr_vector<libcow::download_control> download_control_vector;
+
         download_device_manager dd_manager_;
-
-        typedef std::map<int, boost::shared_ptr<libcow::download_control> >
-            download_control_map_;
-        
         libtorrent::session session_;
-        std::string download_directory_;
-
-		// TODO: replace the second map with multimap :D
-        std::map<int, std::map<std::string, properties> > download_device_information_map_;
-       
-        download_control_map_ download_controls_;
+        std::string download_directory_;             
+        download_control_vector download_controls_;
     
 		boost::shared_ptr<boost::thread> logger_thread_ptr_;
         bool logger_thread_running_;
