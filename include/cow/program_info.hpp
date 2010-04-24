@@ -29,6 +29,8 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_program_info___
 #define ___libcow_program_info___
 
+#include "cow/libcow_types.hpp"
+
 namespace libcow {
 
     /**
@@ -40,7 +42,7 @@ namespace libcow {
         int id; // auto increment 
         std::string name; // Big Tits 2
         std::string description; // A man is walking his female dog...
-        std::map<std::string, libcow::properties> download_devices;
+        libcow::device_map download_devices;
     };
 }
 #endif // ___libcow_program_info___

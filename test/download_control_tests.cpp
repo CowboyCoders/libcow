@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
 
     client.set_download_directory(dl_path);
     client.set_bittorrent_port(port_num);
-	client.get_program_table();
     client.register_download_device_factory(
         boost::shared_ptr<libcow::download_device_factory>(
             new libcow::on_demand_server_connection_factory()), 
@@ -62,9 +61,14 @@ int main(int argc, char* argv[])
             new libcow::multicast_server_connection_factory()),
         "multicast");
 
-    client.get_program_table();
+
+
+    libcow::program_table prog_table;
+    prog_table.load_from_http("cowboycoders.se/program_table.xml");
+
+
     std::cout << "starting download" << std::endl;
-    libcow::download_control* ctrl = client.start_download(1);
+    libcow::download_control* ctrl = client.start_download(prog_table.at(0));
 
     if(!ctrl) {
         return 1;
@@ -100,7 +104,7 @@ int main(int argc, char* argv[])
         libcow::system::sleep(1000); 
     }
 
-    client.stop_download(1);
+    client.remove_download(ctrl);
 
     return 0;
 }

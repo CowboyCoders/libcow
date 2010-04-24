@@ -32,6 +32,7 @@ or implied, of CowboyCoders.
 #include "cow/libcow_def.hpp"
 
 #include "cow/cow_client.hpp"
+#include "cow/program_table.hpp"
 #include "cow/curl_instance.hpp"
 #include "cow/program_info.hpp"
 #include "cow/on_demand_server_connection.hpp"

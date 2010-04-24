@@ -31,7 +31,7 @@ or implied, of CowboyCoders.
 
 #include <libtorrent/session.hpp>
 #include <boost/log/trivial.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "cow/download_device_manager.hpp"
 
@@ -62,20 +62,15 @@ namespace libcow {
                                               const std::string& identifier); 
 
     private:
+        libtorrent::torrent_handle create_torrent_handle(const properties& props);
         void logger_thread_function();
 
+        typedef boost::ptr_vector<libcow::download_control> download_control_vector;
+
         download_device_manager dd_manager_;
-
-        typedef std::map<int, boost::shared_ptr<libcow::download_control> >
-            download_control_map_;
-        
         libtorrent::session session_;
-        std::string download_directory_;
-
-		// TODO: replace the second map with multimap :D
-        std::map<int, std::map<std::string, properties> > download_device_information_map_;
-       
-        download_control_map_ download_controls_;
+        std::string download_directory_;             
+        download_control_vector download_controls_;
     
 		boost::shared_ptr<boost::thread> logger_thread_ptr_;
         bool logger_thread_running_;

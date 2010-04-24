@@ -50,6 +50,33 @@ using namespace libcow;
 const int cow_client::default_max_num_log_messages_ = 1000;
 const int cow_client::default_logging_interval_ = 1; // seconds
 
+template <typename T>
+struct match_second 
+{
+    T val;
+
+    match_second(T const & t) : val (t) {}
+
+    template <typename Pair>
+    bool operator() (Pair const& p) const
+    {
+        return (val == p.second);
+    }
+};
+
+template <typename T>
+struct check_pointer_value
+{
+    T* val;
+
+    check_pointer_value(T* t) : val(t) {}
+
+    bool operator() (T const& x) const
+    {
+        return &x == val;
+    }
+
+};
 
 cow_client::cow_client()
     : max_num_log_messages_(default_max_num_log_messages_),
@@ -96,105 +123,138 @@ void cow_client::set_bittorrent_port(int port)
     session_.listen_on(std::pair<int,int>(port,port));
 }
 
-download_control* cow_client::start_download(const libcow::program_info& program)
+libtorrent::torrent_handle cow_client::create_torrent_handle(const properties& props)
 {
     libtorrent::add_torrent_params params;
     params.save_path = download_directory_;
     params.storage_mode = libtorrent::storage_mode_allocate; // allocate Ensure slot consistency. (sux)
 
-	libtorrent::torrent_handle handle;
-	try {
-        #pragma warning "Should be able to support local torrents for mocking"
-        std::string torrent_file = http_get_as_string(program.download_devices["torrent"]["torrent"]);
-		//std::ofstream File("tmp.torrent",std::ios_base::binary);
-		//File << torrent_file;
-		//params.tracker_url = "http://cowboycoders.se:6969/announce"; 
-		params.ti = new libtorrent::torrent_info(torrent_file.data(),torrent_file.size() );
-		handle = session_.add_torrent(params);		
-	} 
-    catch (libtorrent::libtorrent_exception e) {
-		try {
-			BOOST_LOG_TRIVIAL(debug) << "cow_client: torrent file unavailable: " << e.what(); 
-			BOOST_LOG_TRIVIAL(debug) << "cow_client: trying magnet: " << program.download_devices["torrent"]["magnet"];
+    properties::const_iterator torrent_it = props.find("torrent");
 
-			params.ti = 0;
-			handle = add_magnet_uri(session_, program.download_devices["torrent"]["magnet"], params);
+    if (torrent_it != props.end()) {
+
+        const std::string& torrent = torrent_it->second;
+        std::string torrent_file = http_get_as_string(torrent);
+
+    	try {
+            // Set the torrent file
+    		params.ti = new libtorrent::torrent_info(torrent_file.data(), torrent_file.size());
+            // Create and return the torrent_handle
+    		return session_.add_torrent(params);		
+    	} 
+        catch (libtorrent::libtorrent_exception e) {
+    		BOOST_LOG_TRIVIAL(error) << "cow_client: failed to load torrent: " << e.what(); 
+    	}
+    }
+
+    properties::const_iterator magnet_it = props.find("magnet");
+
+    if (magnet_it != props.end()) {
+		try {
+            // Make sure there is no torrent torrent file given
+			params.ti = 0; 
+            // Create a handle from a magnet uri
+            return libtorrent::add_magnet_uri(session_, magnet_it->second, params);
 		} 
         catch (libtorrent::libtorrent_exception e) {
-            BOOST_LOG_TRIVIAL(error) << "cow_client: Error getting torrent by magnet: " << e.what();
+            BOOST_LOG_TRIVIAL(error) << "cow_client: Error creating torrent from magnet URI: " << e.what();
 		}
-	}
-
-    try {
-        download_control* download = new libcow::download_control(handle);
-        download_controls_[program.id] = boost::shared_ptr<download_control>(download);
-
-        download->piece_sources_ =  &piece_sources_;
-
-        //TODO: Complete this stuff!
-        device_map::iterator dev_iter;
-        std::map<int, std::string>::iterator id_iter;
-
-        for (dev_iter = program.download_devices.begin(); dev_iter != program.download_devices.end(); ++dev_iter) {
-            int id = 0;
-            for(id_iter = piece_sources_.begin(); id_iter != piece_sources_.end(); ++id_iter){
-                if(id_iter->second == dev_iter->first) {
-                    id = id_iter->first;
-                }
-            }
-
-            struct compare_device_name {
-                bool operator() (const std::pair<device_map::key_type, device_map::value_type>& device,
-                    const 
-                {
-                }
-            };
-
-            std::find_if(piece_sources_.begin(), piece_sources_.end(), compare_device_name());
-
-    		if(dev_iter->first != "torrent"){
-                properties props = download_device_information_map_[program.id][dev_iter->first];
-                download_device* dev = dd_manager_.create_instance(id, dev_iter->first, props);
-                if(dev) {
-                    libcow::response_handler_function add_pieces_function = 
-                        boost::bind(&download_control::add_pieces, dc, _1, _2);
-
-                    dev->set_add_pieces_function(add_pieces_function);
-                }
-                dc->add_download_device(dev);
-        	}
-        }
-        else
-        {
-            /* TODO: Throw exception?! */
-        }
-
-        return dc;
-
-    } catch (libtorrent::libtorrent_exception e) {
-        BOOST_LOG_TRIVIAL(warning) << "cow_client: Failed to start download with program_id "
-            << program_id << ": " << e.what();
-        //TODO: throw exception!
-        return 0;
     }
+
+    // If we have reached this point we have failed to create the handle
+    return libtorrent::torrent_handle();
 }
 
-void cow_client::stop_download(download_control* download)
+download_control* cow_client::start_download(const libcow::program_info& program)
+{
+    // Look for a torrent device
+    device_map::const_iterator device_it = program.download_devices.find("torrent");
+
+    if (device_it == program.download_devices.end()) {
+        BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to start download because the program does not have a torrent download device.";
+        return 0;
+    }
+
+    // Fetch properties for the torrent device 
+    properties torrent_props = device_it->second;
+
+    // Create the torrent_handle from the properties
+    libtorrent::torrent_handle torrent = create_torrent_handle(torrent_props);
+
+    // Make sure the handle is valid
+    if (!torrent.is_valid()) {
+        BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create torrent handle.";
+        return 0;
+    }
+
+    // Create a new download_control
+    download_control* download = new libcow::download_control(torrent);
+    download->piece_sources_ =  &piece_sources_;
+
+    for (device_it = program.download_devices.begin(); 
+        device_it != program.download_devices.end(); ++device_it) 
+    {
+        const std::string& device_type = device_it->first;
+		if (device_type != "torrent") {
+
+            // Find the <id, device_type> pair in piece_sources_ with the same type as the device
+            std::map<int, std::string>::iterator piece_source_iter;
+            piece_source_iter = std::find_if(piece_sources_.begin(), 
+                                             piece_sources_.end(),
+                                             match_second<std::string>(device_type));
+
+            int device_id = 0;
+
+            if (piece_source_iter != piece_sources_.end()) {
+                // Piece source key is the id of the download device
+                device_id = piece_source_iter->first; 
+
+                // Get the properties for this downlod device
+                const properties& props = device_it->second;
+
+                // Create a new instance of the download device using the factory
+                download_device* device = dd_manager_.create_instance(device_id, device_type, props);
+
+                if (!device) {
+                    // Write an error but continue since the at least the torrent worked
+                    BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create download device of type: " << device_type;
+                } else {
+                    libcow::response_handler_function add_pieces_function = 
+                        boost::bind(&download_control::add_pieces, download, _1, _2);
+
+                    device->set_add_pieces_function(add_pieces_function);      
+                    download->add_download_device(device);
+                }
+
+            } else {
+                BOOST_LOG_TRIVIAL(warning) << "cow_client: Unsupported download device type: " << device_type;
+            }
+
+    	}
+    }
+
+    download_controls_.push_back(download);
+    return download;
+}
+
+void cow_client::remove_download(download_control* download)
 {
     assert(download != 0);
-    download_control_map_::iterator iter = download_controls_.find(download->id);
 
-    if(iter == download_controls_.end()) {
-        BOOST_LOG_TRIVIAL(debug) 
-            << "cow_client: Could not stop download with program_id "
-            << program_id << " since it is not started";
+    download_control_vector::iterator iter = 
+        std::find_if(download_controls_.begin(), download_controls_.end(), 
+                     check_pointer_value<download_control>(download));
+
+    if (iter == download_controls_.end()) {
+        BOOST_LOG_TRIVIAL(warning) << "cow_client: Can't remove download since it's never registered.";
     } else {
-        BOOST_LOG_TRIVIAL(debug) << "cow_client: Stopping download with program_id " << program_id;
+        // Remove torrent handle
+        session_.remove_torrent(download->handle_);
 
-        download_control* dc = iter->second.get();
-
-        session_.remove_torrent(dc->handle_);
+        // Remove from the list of controls and free memory
         download_controls_.erase(iter);
+
+        BOOST_LOG_TRIVIAL(debug) << "cow_client: Removed program download.";
     }
 }
 

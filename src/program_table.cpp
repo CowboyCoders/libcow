@@ -10,7 +10,7 @@
 using namespace libcow;
 
 const char* xml_programtable_root = "program_table";
-const char* xml_programtable__program_tag = "program";
+const char* xml_programtable_program_tag = "program";
 
 const char* xml_program_name_tag = "name";
 const char* xml_program_description_tag = "description";
@@ -101,6 +101,8 @@ bool parse_program_info(TiXmlElement* program_node, program_info& dest)
         BOOST_LOG_TRIVIAL(warning) << "program_table: Program didn't contain any valid download devices.\n";
         return false;
     }
+
+    return true;
 }
 
 bool program_table::load_from_file(const std::string& file_name)
@@ -112,7 +114,7 @@ bool program_table::load_from_file(const std::string& file_name)
     }
 
     fs.seekg(0, std::ios_base::end);
-    std::streampos length = fs.tellg();
+    size_t length = static_cast<size_t>(fs.tellg());
     fs.seekg(0);
 
     // Allocate and read the whole file in one read
