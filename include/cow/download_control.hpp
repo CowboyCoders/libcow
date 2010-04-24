@@ -47,6 +47,15 @@ namespace libcow {
         progress_info get_progress();
         void pre_buffer(size_t offset, size_t length);
         void pre_buffer(const std::vector<libcow::piece_request> requests);
+
+        /**
+        * This function returns the total file size of the downloaded data.
+        * @return Size of the downloaded data in bytes.
+        */
+        size_t file_size() const { throw "not implemented"; }
+
+        std::string target_filename() const { throw "not implemented"; }
+
         size_t read_data(size_t offset, libcow::utils::buffer& buffer);
         bool has_data(size_t offset, size_t length);
 
