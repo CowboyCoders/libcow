@@ -33,16 +33,23 @@ or implied, of CowboyCoders.
 
 namespace libcow
 {
+   /**
+    * This factory is used to dynamically create on_demand_server_connections.
+    */
 	struct LIBCOW_EXPORT on_demand_server_connection_factory 
         : public download_device_factory 
     {
         virtual ~on_demand_server_connection_factory() {}
-        /**
-		* \fn Returns a pointer to a new on_demand_server_connection.
-        * Ownership of the returned object is passed to the caller, that is, whoever
+       /**
+        * This function creates a new on_demand_server_connection.
+        * A pointer to the new object is returned. The
+        * properties for the specific download device is sent using a properties
+        * map. Ownership of the returned object is passed to the caller, that is, whoever
         * called this function is responsible for deleting the download_device.
-		* @param pmap A properties map with properties for the on_demand_server_connection
-		* @return A download_device pointer to the new on_demand_server_connection
+        * @param id The unique id for this device.
+        * @param pmap A properties map with properties for the download_device.
+        * @return A pointer to the newly created download_device.
+        * @author crimzor
 		*/
         virtual download_device * create(int id, const properties& pmap);
 	};

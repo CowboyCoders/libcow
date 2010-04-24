@@ -33,18 +33,23 @@ or implied, of CowboyCoders.
 
 namespace libcow {
 
+   /**
+    * This factory is used to dynamically create multicast_server_connections.
+    */
 	struct LIBCOW_EXPORT multicast_server_connection_factory 
         : public download_device_factory 
     {
-        /**
-		* \fn This function creates a new download device of the type that im-
-		* plements the interface. A pointer to the new object is returned. The
-		* properties for the specic download device is sent using a properties
-		* map.
-		* @param pmap A properties map with properties for the download_device
-		* @return download_device, a pointer to it, the new one. very good!
-		* @author crimzor
-		*/
+       /**
+        * This function creates a new multicast_server_connection.
+        * A pointer to the new object is returned. The
+        * properties for the specific download device is sent using a properties
+        * map. Ownership of the returned object is passed to the caller, that is, whoever
+        * called this function is responsible for deleting the download_device.
+        * @param id The unique id for this device.
+        * @param pmap A properties map with properties for the download_device.
+        * @return A pointer to the newly created download_device.
+        * @author crimzor
+        */
         virtual download_device * create(int id, const properties& pmap);
 
 	};

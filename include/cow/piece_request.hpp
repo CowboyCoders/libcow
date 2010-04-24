@@ -25,7 +25,7 @@ The views and conclusions contained in the software and documentation are those 
 authors and should not be interpreted as representing official policies, either expressed
 or implied, of CowboyCoders.
 */
-
+#include "cow/cow.hpp"
 #ifndef ___libcow_piece_request___
 #define ___libcow_piece_request___
 
@@ -38,11 +38,12 @@ namespace libcow {
     struct LIBCOW_EXPORT piece_request
     {
 
-        /**
-         * @param ps The piece size, i.e size of each torrent piece.
-         * @param idx Piece index
-         * @param c The number of contiguous pieces to download, starting at idx.
-         */
+       /**
+        * Creates a new piece request.
+        * @param ps The piece size, i.e size of each torrent piece.
+        * @param idx The index of the piece to request.
+        * @param c The number of contiguous pieces to download, starting at idx.
+        */
         piece_request(const size_t& ps, const size_t& idx, const size_t& c)
             : piece_size(ps)
             , index(idx)
@@ -50,8 +51,19 @@ namespace libcow {
         {
         }
 
+       /**
+        * The size of the piece in bytes.
+        */
         size_t piece_size;
+
+       /**
+        * The index of the piece.
+        */
         size_t index;
+
+       /**
+        * Number of pieces in a row to download.
+        */
         size_t count;
 
     };

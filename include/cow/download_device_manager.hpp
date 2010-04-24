@@ -36,18 +36,30 @@ or implied, of CowboyCoders.
 
 namespace libcow {
 
+   /**
+    * This class keeps track of all registered download_device_factories.
+    */
     class LIBCOW_EXPORT download_device_manager 
     {
     public:
-        /** \fn Register a download device factory.
+       /**
+        * Register a download_device factory.
         * Any previously registered factory with the same unique identifier
         * will be removed!
+        * @param factory A boost::shared_ptr to The factory to register.
+        * @param identifier The string representation of the download_device.
         */
         void register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 
             const std::string& identifier); 
 
-        /** @return A new download_device of some type specified by the unique identifier.
-        * Returns 0 if no such download_device type is registered.
+       /**
+        * This function creates a new instance of the specified download_device,
+        * and opens it using the specified properties.
+        * @param id The unique id to assign to the download_device.
+        * @param ident The string representation of the download_device.
+        * @param properties A map of properties to open the device with.
+        * @return A new download_device specified by the unique identifier,
+        * returns 0 if no such download_device type is registered.
         */
         download_device* create_instance(int id, std::string ident, const properties& pmap);
 

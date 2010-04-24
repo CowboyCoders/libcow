@@ -39,6 +39,12 @@ namespace libcow
      */
     struct LIBCOW_EXPORT piece_data
     {
+       /**
+        * Creates a new piece_data struct that will contain the specified
+        * index and buffer.
+        * @param idx The index of the piece.
+        * @param dat The buffer with data for the piece.
+        */
         piece_data(const size_t& idx, libcow::utils::buffer dat)
             : index(idx)
             , data(dat)

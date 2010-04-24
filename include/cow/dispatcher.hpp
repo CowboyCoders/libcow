@@ -58,14 +58,13 @@ namespace libcow {
         * Stops processing jobs and then destructs the dispatcher. Note that
         * the dispatcher will wait until any currently running job has completed
         * before destructing.
-        * TODO: Maybe we shouldn't wait here, or at least add completion timeout.
         */
+        // TODO: Maybe we shouldn't wait here, or at least add completion timeout.
         ~dispatcher();
 
        /**
         * Adds an argument-less function object to the job queue.
         * It's safe to call this function from multiple threads.
-        * See dispatcher_example for usage examples.
         * @param handler A function object, perhaps created using boost::bind.
         */
         template<typename CompletionHandler>

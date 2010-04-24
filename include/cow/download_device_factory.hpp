@@ -25,21 +25,27 @@ The views and conclusions contained in the software and documentation are those 
 authors and should not be interpreted as representing official policies, either expressed
 or implied, of CowboyCoders.
 */
-
+#include "cow/cow.hpp"
 #ifndef ___libcow_download_device_factory___
 #define ___libcow_download_device_factory___
 
 namespace libcow {
 
+   /**
+    * This interface must be implemented for each download_device in order
+    * to be able to create new download_devices dynamically.
+    */
 	struct LIBCOW_EXPORT download_device_factory {
         virtual ~download_device_factory() {}
-        /**
-		* \fn This function creates a new download device of the type that im-
-		* plements the interface. A pointer to the new object is returned. The
-		* properties for the specic download device is sent using a properties
-		* map.
-		* @param pmap A properties map with properties for the download_device
-		* @return download_device, a pointer to it, the new one. very good!
+       /**
+        * This function creates a new download device of the type that implements
+        * the interface. A pointer to the new object is returned. The
+        * properties for the specific download device is sent using a properties
+        * map. Ownership of the returned object is passed to the caller, that is, whoever
+        * called this function is responsible for deleting the download_device.
+        * @param id The unique id for this device.
+        * @param pmap A properties map with properties for the download_device.
+        * @return A pointer to the newly created download_device.
 		* @author crimzor
 		*/
         virtual download_device * create(int id, const properties& pmap) = 0;

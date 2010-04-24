@@ -94,6 +94,11 @@ namespace libcow
 
     struct curl_instance
     {
+       /**
+        * Creates a new curl_instance that make calls to the file
+        * specified in the connection string.
+        * @param connection_string The url to the file to make calls to.
+        */
         curl_instance(const std::string& connection_string)
         {
             curl = curl_easy_init();
@@ -113,10 +118,14 @@ namespace libcow
             curl_easy_cleanup(curl);
         }
 
-        // handle to curl
+       /**
+        * Handle to curl.
+        */
         CURL *curl;
 
-        // libcurl callback function
+       /**
+        * libcurl callback function.
+        */
         static size_t write_data(void * buffer,
                                  size_t size,
                                  size_t nmemb,
