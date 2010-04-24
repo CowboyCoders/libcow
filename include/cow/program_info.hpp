@@ -25,7 +25,7 @@ The views and conclusions contained in the software and documentation are those 
 authors and should not be interpreted as representing official policies, either expressed
 or implied, of CowboyCoders.
 */
-
+#include "cow/cow.hpp"
 #ifndef ___libcow_program_info___
 #define ___libcow_program_info___
 
@@ -37,8 +37,19 @@ namespace libcow {
     */
     struct program_info 
     {
+       /**
+        * The id of the program.
+        */
         int id;
+
+       /**
+        * The name of the program.
+        */
         std::string name;
+
+       /**
+        * The description of the program.
+        */
         std::string description;
     };
 }

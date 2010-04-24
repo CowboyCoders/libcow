@@ -34,13 +34,28 @@ or implied, of CowboyCoders.
 namespace libcow {
     /**
      * Used for keeping track of the ways to download a specific program.
+     * This struct contains a list of download_device_descriptions for each
+     * program.
      */
     struct program_sources
     {
+       /**
+        * Creates a new program_sources struct.
+        * @param d A vector of download_device_descriptions, describing ways to download this program.
+        * @param i The program that can be downloaded using the download_devices described in d.
+        */
         program_sources(const std::vector<libcow::download_device_description*>& d, const libcow::program_info& i);
         virtual ~program_sources();
 
+       /**
+        * A vector of download_device_description pointer that describes how the
+        * program can be downloaded.
+        */
         std::vector<libcow::download_device_description*> devices;
+
+       /**
+        * A struct containing information about the program.
+        */
         libcow::program_info info;
     };
 }

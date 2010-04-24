@@ -36,6 +36,9 @@ namespace libcow {
      */
     struct LIBCOW_EXPORT progress_info
     {
+       /**
+        * An enum describing the state of the current download progress.
+        */
         enum torrent_state {
             unknown,
             checking_resume_data,
