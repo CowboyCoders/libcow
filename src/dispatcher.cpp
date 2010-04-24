@@ -29,6 +29,7 @@ or implied, of CowboyCoders.
 #include "cow/libcow_def.hpp"
 #include "cow/dispatcher.hpp"
 
+#include <boost/log/trivial.hpp>
 #include <iostream>
 
 using namespace libcow;
@@ -42,10 +43,7 @@ dispatcher::dispatcher()
 
 dispatcher::~dispatcher()
 {
-#ifdef DEBUG
-    std::cerr << "dispatcher: waiting for running jobs to complete..."
-              << std::endl;
-#endif
+    BOOST_LOG_TRIVIAL(info) << "dispatcher: waiting for running jobs to complete...";
     io_service.stop();
     thread.join();
 }

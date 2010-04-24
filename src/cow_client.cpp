@@ -81,6 +81,7 @@ struct check_pointer_value
 cow_client::cow_client()
     : max_num_log_messages_(default_max_num_log_messages_),
       logging_interval_(default_logging_interval_),
+      logger_thread_running_(false),
       download_device_id_(0)
 {
     //TODO: change this to configurable log levels
@@ -110,7 +111,7 @@ cow_client::cow_client()
 
 cow_client::~cow_client()
 {
-
+    stop_logger();
 }
 
 void cow_client::set_download_directory(const std::string& path)
@@ -260,7 +261,14 @@ void cow_client::remove_download(download_control* download)
 
 void cow_client::logger_thread_function()
 {
-    while(true) {
+    while(true) 
+    {
+        {
+            boost::mutex::scoped_lock lock(logger_mutex_);
+            if(logger_thread_running_ == false) {
+                break;
+            }
+        }
         size_t msg_count = 0;
 
         std::auto_ptr<libtorrent::alert> alert_ptr = session_.pop_alert();
@@ -277,6 +285,10 @@ void cow_client::logger_thread_function()
 
 void cow_client::start_logger()
 {
+    {
+        boost::mutex::scoped_lock lock(logger_mutex_);
+        logger_thread_running_ = true;
+    }
     logger_thread_ptr_.reset(
         new boost::thread(
             boost::bind(&cow_client::logger_thread_function, this)));
@@ -285,7 +297,13 @@ void cow_client::start_logger()
 
 void cow_client::stop_logger()
 {
-    logger_thread_ptr_.reset();   
+    {
+        boost::mutex::scoped_lock lock(logger_mutex_);
+        logger_thread_running_ = false;
+    }
+    if(logger_thread_ptr_) {
+        logger_thread_ptr_->join();
+    }
 }
 
 void cow_client::register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 

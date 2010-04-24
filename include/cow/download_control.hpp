@@ -31,7 +31,7 @@ or implied, of CowboyCoders.
 
 #include "buffer.hpp"
 #include "dispatcher.hpp"
-#include "cow/cow.hpp"
+
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
 #include <libtorrent/torrent_handle.hpp>
@@ -86,7 +86,7 @@ namespace libcow {
         * This function returns the total file size of the downloaded data.
         * @return Size of the downloaded data in bytes.
         */
-        size_t file_size() const { throw "not implemented"; }
+        size_t file_size() const;
 
         std::string target_filename() const { throw "not implemented"; }
 
@@ -106,6 +106,8 @@ namespace libcow {
         * @return True if the data has been downloaded, otherwise false.
         */
         bool has_data(size_t offset, size_t length);
+
+        size_t bytes_available(size_t offset) const;
 
         /**
          * This function sets the current playback position. The piece at

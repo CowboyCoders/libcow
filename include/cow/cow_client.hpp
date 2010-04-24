@@ -129,7 +129,7 @@ namespace libcow {
     
 		boost::shared_ptr<boost::thread> logger_thread_ptr_;
         bool logger_thread_running_;
-        boost::mutex::scoped_lock logger_thread_lock_;
+        boost::mutex logger_mutex_;
 
         size_t max_num_log_messages_;
         int logging_interval_;

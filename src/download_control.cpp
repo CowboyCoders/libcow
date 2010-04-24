@@ -98,7 +98,7 @@ progress_info download_control::get_progress()
             state = progress_info::unknown;
         }
     	
-        libtorrent::bitfield all_false(num_pieces());
+        libtorrent::bitfield all_false(num_pieces(), false);
         return progress_info(state, status.progress, all_false, piece_origin_);
     }
 }
@@ -167,6 +167,35 @@ bool download_control::has_data(size_t offset, size_t length)
     return true;
 }
 
+size_t download_control::bytes_available(size_t offset) const
+{
+    const libtorrent::torrent_info& info = handle_.get_torrent_info();
+	int piece_size = info.piece_length();
+    
+	size_t piece_start = offset / piece_size;
+
+    if ((int)piece_start >= info.num_pieces()) {
+        throw std::out_of_range("bytes_available: offset out of range");
+	}
+
+    libtorrent::torrent_status status = handle_.status();
+	if (status.state != libtorrent::torrent_status::seeding) {
+	    const libtorrent::bitfield& pieces = status.pieces;
+
+        if (!pieces[piece_start]) {
+            return 0;
+        }
+
+		for (size_t i = piece_start + 1; i < info.num_pieces(); ++i) {
+			if (!pieces[i]) {
+				return i * piece_size - offset;
+			}
+		}
+	}
+
+    return info.file_at(0).size - offset;
+}
+
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 {
 	while(!has_data(offset, buffer.size())){
@@ -226,6 +255,12 @@ void download_control::pre_buffer(const std::vector<libcow::piece_request> reque
     } else {
         BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
     }
+}
+
+size_t download_control::file_size() const
+{
+    const libtorrent::file_entry& file_entry = handle_.get_torrent_info().files().at(0);
+    return file_entry.size;
 }
 
 void download_control::debug_print()
@@ -292,7 +327,9 @@ void download_control::set_playback_position(size_t offset)
 
     // set high priority for pieces in critical window
     for(int i = 0; i < critical_window(); ++i) {
-        handle_.piece_priority(first_piece_to_prioritize + i, 7);
+        int idx = first_piece_to_prioritize + i;
+        if(idx >= handle_.get_torrent_info().num_pieces()) break;
+        handle_.piece_priority(idx, 7);
     }
 
     // TODO: add load balancer

@@ -182,3 +182,38 @@ const libcow::program_info& program_table::at(size_t index) const
 {
     return entries_[index];
 }
+
+libcow::program_info& program_table::at(size_t index)
+{
+    return entries_[index];
+}
+
+const libcow::program_info& program_table::operator[](size_t index) const
+{
+    return entries_[index];
+}
+
+libcow::program_info& program_table::operator[](size_t index)
+{
+    return entries_[index];
+}
+
+program_table::iterator program_table::begin() 
+{
+    return entries_.begin();
+}
+
+program_table::const_iterator program_table::begin() const
+{
+    return entries_.begin();
+}
+
+program_table::iterator program_table::end()
+{
+    return entries_.end();
+}
+
+program_table::const_iterator program_table::end() const
+{
+    return entries_.end();
+}
