@@ -36,7 +36,7 @@ or implied, of CowboyCoders.
 
 namespace libcow {
 
-    /**
+   /**
     * \class download_device 
     * A download_device serves as an abstraction layer between different
     * download sources and a download_control. This interface can be
@@ -47,14 +47,15 @@ namespace libcow {
     {
     public:
         
-        virtual ~download_device() {}
+       virtual ~download_device() {}
 
        /** 
         * This function opens the device using the specified settings.
-        * 
+        * This function MUST be called in order to use the device.
+        * @param id The unique id for this device.
         * @param settings A map of settings in the form of value pairs.
         * @return True if the device could be opened, otherwise false.
-        **/
+        */
         virtual bool open(const int id, const libcow::properties& settings) = 0;
 
        /**
@@ -86,7 +87,6 @@ namespace libcow {
         * Random access devices needs to support requests for a random piece in the media,
         * while non-random access devices simply sends the available data to the
         * download_control.
-        * 
         * @return True if the device is a random access device, otherwise false.
         */
         virtual bool is_random_access() = 0;
@@ -94,7 +94,8 @@ namespace libcow {
        /**
         * This function sets the callback function to call when a piece has finished
         * downloading.
-        * 
+        * This function MUST be called in order to use the device.
+        * @param add_pieces_function The callback to send completed pieces to.
         * @return True if it was possible to set the callback, otherwise false.
         */
         virtual bool set_add_pieces_function(libcow::response_handler_function add_pieces_function) = 0;
@@ -102,7 +103,7 @@ namespace libcow {
        /**
         * This function is used by download_control to request pieces from random
         * access devices.
-        * 
+        * @param requests A vector of requested pieces.
         * @return True if it was possible to get the pieces, otherwise false.
         */
         virtual bool get_pieces(const std::vector<libcow::piece_request> & requests) = 0;
