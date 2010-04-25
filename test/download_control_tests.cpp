@@ -61,11 +61,8 @@ int main(int argc, char* argv[])
             new libcow::multicast_server_connection_factory()),
         "multicast");
 
-
-
     libcow::program_table prog_table;
     prog_table.load_from_http("cowboycoders.se/program_table.xml");
-
 
     std::cout << "starting download" << std::endl;
     libcow::download_control* ctrl = client.start_download(prog_table.at(0));
@@ -73,6 +70,8 @@ int main(int argc, char* argv[])
     if(!ctrl) {
         return 1;
     }
+
+    std::cout << "testing blocking read...." << std::endl;
 
     std::vector<libcow::piece_request> reqs1;
     reqs1.push_back(libcow::piece_request(ctrl->piece_length(), 0, 1));
@@ -101,8 +100,6 @@ int main(int argc, char* argv[])
 
     std::cout << "read attempt 1: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
     std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
-
-    libcow::system::sleep(5000);
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
     

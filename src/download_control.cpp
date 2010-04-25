@@ -308,6 +308,11 @@ void download_control::debug_print()
 
 void download_control::set_playback_position(size_t offset)
 {
+    // don't fiddle with download strategies if seeding
+    if(handle_.status().state == libtorrent::torrent_status::seeding) {
+        return;
+    }
+
     assert(offset >= 0);
 
     // create a vector of pieces to prioritize
@@ -361,7 +366,8 @@ void download_control::fetch_missing_pieces(download_device* dev,
 {
     assert(last_piece >= first_piece);
     
-    libtorrent::bitfield pieces = handle_.status().pieces;
+    libtorrent::torrent_status status = handle_.status();
+    libtorrent::bitfield pieces = status.pieces;
 
     assert(last_piece < pieces.size());
 
