@@ -149,7 +149,7 @@ namespace libcow {
          int id_; //Device id
 
 
-         void send(const std::map<int,std::vector<int> > indices);
+         void send(size_t piece_size, std::vector<int> indices);
     };
 
 }

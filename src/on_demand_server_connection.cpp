@@ -137,21 +137,15 @@ bool on_demand_server_connection::close()
     return true;
 }
 
-void on_demand_server_connection::send(const std::map<int, std::vector<int> > indices)
+void on_demand_server_connection::send(size_t piece_size, std::vector<int> indices)
 {
-    std::map<int, std::vector<int> >::const_iterator it;
-    for(it = indices.begin(); it != indices.end(); ++it)
-    {
-        int piece_size = (*it).first;
-        std::vector<int> inds = (*it).second;
-        
-        io_service.post(
-                boost::bind(&on_demand_server_connection::worker,
-                            this,
-                            connection_string_,
-                            piece_size,
-                            inds));
-    }
+    io_service.post(
+            boost::bind(&on_demand_server_connection::worker,
+                        this,
+                        connection_string_,
+                        piece_size,
+                        indices));
+    
 }
 
 size_t libcow::curl_instance::write_data(void * buffer,
@@ -301,7 +295,7 @@ bool on_demand_server_connection::get_pieces(const std::vector<piece_request> & 
         return false;
     } else
     {
-        std::map<int,std::vector<int> > indices;
+        std::vector<int> indices;
 
         std::vector<piece_request>::const_iterator it;
         for(it = requests.begin(); it != requests.end(); ++it)
@@ -309,11 +303,11 @@ bool on_demand_server_connection::get_pieces(const std::vector<piece_request> & 
             piece_request req = *it;
             for(size_t i = 0; i < req.count; ++i)
             {
-                indices[req.piece_size].push_back(req.index+i);
+                indices.push_back(req.index+i);
             }
         }
 
-        send(indices);
+        send(requests[0].piece_size, indices);
         return true;
     }
 }
