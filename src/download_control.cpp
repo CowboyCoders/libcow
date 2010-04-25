@@ -54,6 +54,7 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
 {
     srand (time(NULL));
     piece_origin_ = std::vector<int>(handle_.get_torrent_info().num_pieces(),0);
+    critically_requested_ = std::vector<bool>(handle_.get_torrent_info().num_pieces(), false);
 }
 
 download_control::~download_control()
@@ -209,7 +210,7 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     if(!file_handle_.is_open()) {
         // FIXME: reads from file with index 0 ONLY!
         libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-    std::string filename = file_entry.path.string();
+    std::string filename = file_entry.path;
 
 #if 0
         std::cout << "filename: " << filename << std::endl;
@@ -356,7 +357,6 @@ void download_control::fetch_missing_pieces(download_device* dev,
                                             int last_piece, 
                                             boost::system::error_code& error)
 {
-    BOOST_LOG_TRIVIAL(debug) << "Falling back to random access download devices";
     assert(last_piece >= first_piece);
     
     libtorrent::bitfield pieces = handle_.status().pieces;
@@ -366,10 +366,16 @@ void download_control::fetch_missing_pieces(download_device* dev,
     std::vector<libcow::piece_request> reqs;
 
     for(int i = first_piece; i <= last_piece; ++i) {
-        if(!pieces[i]) { // request only pieces we don't have
+        // request only pieces that we don't already have or 
+        // haven't alread requested.
+        if(!pieces[i] && !critically_requested_[i]) {
             reqs.push_back(libcow::piece_request(piece_length(), i, 1));
+            critically_requested_[i] = true;
         }
     }
 
-    dev->get_pieces(reqs);
+    if(reqs.size() > 0) {
+        BOOST_LOG_TRIVIAL(debug) << "Falling back to random access download devices";
+        dev->get_pieces(reqs);
+    }
 }

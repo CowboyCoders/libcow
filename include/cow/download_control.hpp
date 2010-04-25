@@ -141,7 +141,11 @@ namespace libcow {
         * @param piece_index The index of the piece to set the source for.
         */
         void set_piece_src(int source, int piece_index) {
-            piece_origin_[piece_index] = source;
+            if(piece_index < piece_origin_.size() &&
+                piece_origin_[piece_index] == 0)
+            {
+                piece_origin_[piece_index] = source;
+            }
         }
 
        /**
@@ -180,6 +184,7 @@ namespace libcow {
         dispatcher disp_;
 
         int critical_window_;
+        std::vector<bool> critically_requested_;
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;

@@ -87,21 +87,33 @@ int main(int argc, char* argv[])
         libcow::system::sleep(1000);
     }
 
-    ctrl->set_playback_position(20*256*1024);
+    
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
-    while(true) { 
+    for(size_t i = 0; i < 500; ++i) {
         ctrl->debug_print();
         libcow::progress_info progress_info = ctrl->get_progress();
         std::cout << "State: " << progress_info.state_str() 
             << ", Progress: " << (progress_info.progress() * 100.0) 
             << "%" << std::endl;
-        libcow::system::sleep(1000); 
+        
+        size_t playback_pos = i*256*1024;
+        std::cout << "setting playback position to " << playback_pos << std::endl;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(250);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(250);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(250);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(250);
     }
 
     client.remove_download(ctrl);
 
     return 0;
 }
-    
