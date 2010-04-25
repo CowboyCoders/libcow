@@ -169,7 +169,6 @@ bool download_control::has_data(size_t offset, size_t length)
 			}
 		}
 	}
-
     return true;
 }
 
