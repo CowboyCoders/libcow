@@ -229,8 +229,12 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 #endif
     }
 
+    file_handle_.seekg (0, std::ios::end);
+    size_t length = file_handle_.tellg();
     file_handle_.seekg(offset);
-    file_handle_.read(buffer.data(), buffer.size());
+
+    size_t bytes_to_read = std::min(length-offset, buffer.size());
+    file_handle_.read(buffer.data(), bytes_to_read);
     
     return static_cast<size_t>(file_handle_.gcount());
 }

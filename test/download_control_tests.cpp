@@ -92,7 +92,18 @@ int main(int argc, char* argv[])
 
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 
-	
+    char* testbuf = new char[16*1024];
+    libcow::utils::buffer testbuf_wrap(testbuf, 16*1024);
+    char* testbuf2 = new char[4064];
+    libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
+
+    std::cout << "read attempt 3: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
+
+    std::cout << "read attempt 1: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+
+    libcow::system::sleep(5000);
+
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
     
     for(int i = 0; i < 2; ++i) {
