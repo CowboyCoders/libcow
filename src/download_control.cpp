@@ -365,6 +365,10 @@ void download_control::fetch_missing_pieces(download_device* dev,
     std::vector<libcow::piece_request> reqs;
 
     for(int i = first_piece; i <= last_piece; ++i) {
+        // don't request non-existing pieces
+        if(i >= num_pieces()) {
+            break;
+        }
         // request only pieces that we don't already have or 
         // haven't alread requested.
         if(!pieces[i] && !critically_requested_[i]) {
