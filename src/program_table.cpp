@@ -107,7 +107,7 @@ bool parse_program_info(TiXmlElement* program_node, program_info& dest)
 
 bool program_table::load_from_file(const std::string& file_name)
 {
-    std::ifstream fs(file_name, std::ios_base::in);
+    std::ifstream fs(file_name.c_str(), std::ios_base::in);
     if (!fs) {
         BOOST_LOG_TRIVIAL(error) << "program_table: Error opening file \"" << file_name << "\".";
         return false;

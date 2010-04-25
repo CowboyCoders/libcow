@@ -47,9 +47,9 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
                                    int critical_window_length,
                                    int critical_window_timeout)
     : piece_sources_(0),
-    critical_window_(critical_window_length),
     handle_(handle),
-    disp_(critical_window_timeout) //TODO: 
+    disp_(critical_window_timeout), //TODO: 
+    critical_window_(critical_window_length)
 
 {
     srand (time(NULL));
@@ -190,7 +190,7 @@ size_t download_control::bytes_available(size_t offset) const
             return 0;
         }
 
-		for (size_t i = piece_start + 1; i < info.num_pieces(); ++i) {
+		for (int i = piece_start + 1; i < info.num_pieces(); ++i) {
 			if (!pieces[i]) {
 				return i * piece_size - offset;
 			}
@@ -209,7 +209,7 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     if(!file_handle_.is_open()) {
         // FIXME: reads from file with index 0 ONLY!
         libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-    std::string filename = file_entry.path;
+    std::string filename = file_entry.path.string();
 
 #if 0
         std::cout << "filename: " << filename << std::endl;
