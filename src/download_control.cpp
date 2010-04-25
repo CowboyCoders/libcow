@@ -119,11 +119,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
     libtorrent::torrent_info info = handle_.get_torrent_info();
     std::vector<piece_data>::const_iterator iter;
 
-    BOOST_LOG_TRIVIAL(debug) << "add_piece";
-
     for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
     {
-        if((int)iter->data.size() != info.piece_size(iter->index)) {
+        if((int)iter->data.size() < info.piece_size(iter->index)) {
             BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                 << "trying to add piece with index " << iter->index
                 << " and size " << iter->data.size() << ", but expected size is "
@@ -131,6 +129,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
             continue;
         }
         disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+
+        BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
+                                 << iter->index;
         handle_.add_piece(iter->index, iter->data.data());
     }
 }
@@ -241,7 +242,6 @@ void download_control::pre_buffer(size_t offset, size_t length)
 
 void download_control::pre_buffer(const std::vector<libcow::piece_request> requests)
 {
-    //FIXME: only uses
     std::vector<boost::shared_ptr<download_device> >::iterator it;
 
     download_device* random_access_device = 0;
@@ -307,19 +307,6 @@ void download_control::set_playback_position(size_t offset)
 {
     assert(offset >= 0);
 
-    // get an up to date list of random access devices
-    std::vector<download_device*> random_access_devices;
-
-    std::vector<boost::shared_ptr<download_device> >::iterator it;
-
-    for(it = download_devices.begin(); it != download_devices.end(); ++it)
-    {
-        download_device* dev = it->get();
-        if(dev && dev->is_random_access()) {
-            random_access_devices.push_back(dev);
-        }
-    }
-
     // create a vector of pieces to prioritize
     int first_piece_to_prioritize = offset / piece_length();
 
@@ -337,6 +324,18 @@ void download_control::set_playback_position(size_t offset)
         handle_.piece_priority(idx, 7);
     }
 
+    // get an up to date list of random access devices
+    std::vector<download_device*> random_access_devices;
+
+    std::vector<boost::shared_ptr<download_device> >::iterator it;
+
+    for(it = download_devices.begin(); it != download_devices.end(); ++it)
+    {
+        download_device* dev = it->get();
+        if(dev && dev->is_random_access()) {
+            random_access_devices.push_back(dev);
+        }
+    }
     
     if(random_access_devices.size() > 0) {
         // load balancing
@@ -371,11 +370,12 @@ void download_control::fetch_missing_pieces(download_device* dev,
         if(!pieces[i] && !critically_requested_[i]) {
             reqs.push_back(libcow::piece_request(piece_length(), i, 1));
             critically_requested_[i] = true;
+            BOOST_LOG_TRIVIAL(debug) 
+                << "Falling back to random access download devices for piece " << i;
         }
     }
 
     if(reqs.size() > 0) {
-        BOOST_LOG_TRIVIAL(debug) << "Falling back to random access download devices";
         dev->get_pieces(reqs);
     }
 }

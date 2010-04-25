@@ -74,6 +74,22 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    std::vector<libcow::piece_request> reqs1;
+    reqs1.push_back(libcow::piece_request(ctrl->piece_length(), 0, 1));
+    ctrl->pre_buffer(reqs1);
+
+    std::vector<libcow::piece_request> reqs2;
+    reqs2.push_back(libcow::piece_request(ctrl->piece_length(), 1, 1));
+    ctrl->pre_buffer(reqs2);
+
+    std::vector<libcow::piece_request> reqs3;
+    reqs3.push_back(libcow::piece_request(ctrl->piece_length(), 2, 1));
+    ctrl->pre_buffer(reqs3);
+
+    std::vector<libcow::piece_request> reqs4;
+    reqs4.push_back(libcow::piece_request(ctrl->piece_length(), ctrl->num_pieces()-1, 1));
+    ctrl->pre_buffer(reqs4);
+
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 
 	
@@ -86,8 +102,6 @@ int main(int argc, char* argv[])
             << "%" << std::endl;
         libcow::system::sleep(1000);
     }
-
-    
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
