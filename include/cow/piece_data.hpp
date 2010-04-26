@@ -29,7 +29,7 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_piece_data___
 #define ___libcow_piece_data___
 
-#include "buffer.hpp"
+#include "cow/utils/buffer.hpp"
 
 namespace libcow
 {

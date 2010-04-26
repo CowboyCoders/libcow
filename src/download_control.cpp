@@ -162,16 +162,28 @@ bool download_control::has_data(size_t offset, size_t length)
         throw std::out_of_range("has_data: piece index out of range");
 	}
 
+
     libtorrent::torrent_status status = handle_.status();
-	if (status.state != libtorrent::torrent_status::seeding){
+    
+    if(status.state == libtorrent::torrent_status::seeding)
+    {
+        return true;
+    }
+	else if (status.state == libtorrent::torrent_status::downloading ||
+             status.state == libtorrent::torrent_status::finished)
+    {
 	    const libtorrent::bitfield& pieces = status.pieces;
 		for (size_t i = piece_start; i <= piece_end ; ++i) {
 			if (!pieces[i]) {
 				return false;
 			}
 		}
+        return true;
 	}
-    return true;
+    else
+    {
+        return false;
+    }
 }
 
 size_t download_control::bytes_available(size_t offset) const

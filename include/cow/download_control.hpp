@@ -29,7 +29,7 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_download_control___
 #define ___libcow_download_control___
 
-#include "buffer.hpp"
+#include "cow/utils/buffer.hpp"
 #include "dispatcher.hpp"
 
 #include <boost/noncopyable.hpp>
@@ -140,7 +140,7 @@ namespace libcow {
         * @param source The unique id of the source. 0 = default(BitTorrent).
         * @param piece_index The index of the piece to set the source for.
         */
-        void set_piece_src(int source, int piece_index) {
+        void set_piece_src(int source, size_t piece_index) {
             if(piece_index < piece_origin_.size() &&
                 piece_origin_[piece_index] == 0)
             {

@@ -80,9 +80,9 @@ struct check_pointer_value
 };
 
 cow_client::cow_client()
-    : max_num_log_messages_(default_max_num_log_messages_),
+    : logger_thread_running_(false),
+      max_num_log_messages_(default_max_num_log_messages_),
       logging_interval_(default_logging_interval_),
-      logger_thread_running_(false),
       download_device_id_(0)
 {
     //TODO: change this to configurable log levels
@@ -265,12 +265,8 @@ void cow_client::remove_download(download_control* download)
 
 bool cow_client::exit_logger_thread()
 {
-    {
-        boost::mutex::scoped_lock lock(logger_mutex_);
-        if(logger_thread_running_ == false) {
-            return true;
-        }
-    }
+    boost::mutex::scoped_lock lock(logger_mutex_);
+    return !logger_thread_running_;
 }
 
 void cow_client::logger_thread_function()

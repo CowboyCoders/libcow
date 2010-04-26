@@ -1,9 +1,10 @@
 project(LIBCOW)
-cmake_minimum_required(VERSION 2.8)
-
+cmake_minimum_required(VERSION 2.6)
 IF(UNIX)
-    include(../FindCurl.cmake)
-    include(../FindLibTorrent.cmake)
+    include(FindPkgConfig)
+    
+    PKG_SEARCH_MODULE(LIBTORRENT REQUIRED libtorrent-rasterbar)
+    PKG_SEARCH_MODULE(CURL REQUIRED libcurl)
     
     include_directories(
         ${CURL_INCLUDE_DIR} 
@@ -15,6 +16,13 @@ ENDIF(UNIX)
 
 IF(UNIX)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+    
+    foreach(arg ${LIBTORRENT_CFLAGS} ${CURL_CFLAGS})
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${arg}")
+    endforeach(arg ${LIBTORRENT_CFLAGS} ${CURL_CFLAGS})
+    foreach(arg ${LIBTORRENT_LDFLAGS} ${CURL_LDFLAGS})
+       set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} ${arg}")
+    endforeach(arg ${LIBTORRENT_LDFLAGS} ${CURL_LDFLAGS})
 ENDIF(UNIX)
 
 set(CMAKE_BUILD_TYPE Debug)
@@ -158,8 +166,8 @@ IF(WIN32)
     SET(TEST_DEPS ${LIBCOW_DEPS} debug cowd optimized cow)
 ELSEIF(UNIX)
     SET(LIBCOW_DEPS
-        ${CURL_LIBRARY}
-        ${LIBTORRENT_LIBRARY}
+        ${CURL_LIBRARIES}
+        ${LIBTORRENT_LIBRARIES}
         ${Boost_SYSTEM_LIBRARY}
         ${Boost_LOG_LIBRARY}
     )
@@ -173,7 +181,6 @@ SET(CMAKE_DEBUG_POSTFIX d)
 # libcow library target
 add_library(cow SHARED ${LIBCOW_SOURCE} ${LIBCOW_HEADERS})
 target_link_libraries(cow ${LIBCOW_DEPS})
-
 IF(WIN32)
 # Set exception handling model
 set_target_properties(cow PROPERTIES COMPILE_FLAGS "/EHa")
