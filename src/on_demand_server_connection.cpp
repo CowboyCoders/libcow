@@ -251,7 +251,9 @@ void on_demand_server_connection::worker(std::string connection_str,
         BOOST_LOG_TRIVIAL(error) << "No add pieces function set!";
         return;
     }
-    handler_(id_, piece_datas);
+    if(handler_) {
+        handler_(id_, piece_datas);
+    }
 
 }
 
