@@ -42,6 +42,7 @@ or implied, of CowboyCoders.
 
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/alert.hpp>
+#include <libtorrent/alert_types.hpp>
 
 #include <boost/thread.hpp>
 
@@ -86,7 +87,8 @@ cow_client::cow_client()
 {
     //TODO: change this to configurable log levels
 	session_.set_alert_mask(libtorrent::alert::progress_notification |
-							libtorrent::alert::storage_notification);
+							libtorrent::alert::storage_notification | 
+                            libtorrent::alert::status_notification);
     libtorrent::session_settings settings;
     settings.user_agent = "cow_agent";
     settings.allowed_fast_set_size = 1000; // 1000 pieces without choking
@@ -261,25 +263,53 @@ void cow_client::remove_download(download_control* download)
     }
 }
 
+bool cow_client::exit_logger_thread()
+{
+    {
+        boost::mutex::scoped_lock lock(logger_mutex_);
+        if(logger_thread_running_ == false) {
+            return true;
+        }
+    }
+}
+
 void cow_client::logger_thread_function()
 {
     while(true) 
     {
-        {
-            boost::mutex::scoped_lock lock(logger_mutex_);
-            if(logger_thread_running_ == false) {
-                break;
-            }
+        if(exit_logger_thread()) {
+            break;
         }
-        size_t msg_count = 0;
 
         std::auto_ptr<libtorrent::alert> alert_ptr = session_.pop_alert();
         libtorrent::alert* alert = alert_ptr.get();
-        while(alert && msg_count < max_num_log_messages_) {
-            BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
+        while(alert && !exit_logger_thread()) {
+            if(libtorrent::hash_failed_alert* hash_alert = libtorrent::alert_cast<libtorrent::hash_failed_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client: hash failed for piece: " << hash_alert->piece_index;
+            } else if(libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client: piece: " << piece_alert->piece_index << " was added by libtorrent"; 
+            } else if(libtorrent::state_changed_alert* state_alert = libtorrent::alert_cast<libtorrent::state_changed_alert>(alert)) {
+		        libtorrent::torrent_status::state_t old_state = state_alert->prev_state;
+                libtorrent::torrent_status::state_t new_state = state_alert->state;
+                
+                if(old_state == libtorrent::torrent_status::checking_files) {
+                    BOOST_LOG_TRIVIAL(debug) << "cow_client: done hashing existing files";
+                }
+
+                if(new_state == libtorrent::torrent_status::finished ||
+                   new_state == libtorrent::torrent_status::seeding ||
+                   new_state == libtorrent::torrent_status::downloading)
+                {
+                    // only emit this one time at startup,
+                    // i.e. check that were not downloading and are beginning to seed
+                    BOOST_LOG_TRIVIAL(debug) << "cow_client: libtorrent is up and running";
+                }
+                
+            } else {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
+            }
             alert_ptr = session_.pop_alert();
             alert = alert_ptr.get();
-            ++msg_count;
         }
         libcow::system::sleep(logging_interval_);
     }

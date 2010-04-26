@@ -119,6 +119,7 @@ namespace libcow {
     private:
         libtorrent::torrent_handle create_torrent_handle(const properties& props);
         void logger_thread_function();
+        bool exit_logger_thread();
 
         typedef boost::ptr_vector<libcow::download_control> download_control_vector;
 
