@@ -112,6 +112,8 @@ cow_client::cow_client()
 cow_client::~cow_client()
 {
     stop_logger();
+    // must destruct download_devices BEFORE the torrent session falls out of scope!
+    download_controls_.clear();
 }
 
 void cow_client::set_download_directory(const std::string& path)

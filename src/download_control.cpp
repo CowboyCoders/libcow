@@ -59,6 +59,8 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
 
 download_control::~download_control()
 {
+    // must destruct download_devices BEFORE the torrent handle falls out of scope!
+    download_devices_.clear();
 }
 
 progress_info download_control::get_progress()
@@ -140,7 +142,7 @@ void download_control::add_download_device(download_device* dd)
 {
     boost::shared_ptr<download_device> dd_ptr;
     dd_ptr.reset(dd);
-    download_devices.push_back(dd_ptr);
+    download_devices_.push_back(dd_ptr);
 }
 
 bool download_control::has_data(size_t offset, size_t length)
@@ -249,7 +251,7 @@ void download_control::pre_buffer(const std::vector<libcow::piece_request> reque
 
     download_device* random_access_device = 0;
 
-    for(it = download_devices.begin(); it != download_devices.end(); ++it) {
+    for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
         download_device* current = it->get();
         if(current != 0 && current->is_random_access()) {
             random_access_device = current;
@@ -290,9 +292,16 @@ void download_control::debug_print()
     std::vector<libtorrent::peer_info> peers;
     handle_.get_peer_info(peers);
     std::vector<libtorrent::peer_info>::iterator peer_iter;
-    std::cout << "interesting? ";
+    std::cout << "interesting peers: ";
+    int interesting_peer_count = 0;
     for(peer_iter = peers.begin(); peer_iter != peers.end(); ++peer_iter) {
-        std::cout << peer_iter->ip << " " << peer_iter->interesting << "; ";   
+        if(peer_iter->interesting) {
+            std::cout << peer_iter->ip << " ";
+            ++interesting_peer_count;
+        }
+    }
+    if(interesting_peer_count == 0) {
+        std::cout << "no interesting peers";
     }
     std::cout << std::endl;
 
@@ -337,7 +346,7 @@ void download_control::set_playback_position(size_t offset)
 
     std::vector<boost::shared_ptr<download_device> >::iterator it;
 
-    for(it = download_devices.begin(); it != download_devices.end(); ++it)
+    for(it = download_devices_.begin(); it != download_devices_.end(); ++it)
     {
         download_device* dev = it->get();
         if(dev && dev->is_random_access()) {

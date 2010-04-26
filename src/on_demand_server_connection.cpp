@@ -51,10 +51,8 @@ on_demand_server_connection::on_demand_server_connection() :
 
 on_demand_server_connection::~on_demand_server_connection()
 {
-#ifdef DEBUG
     BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: "
             << "waiting for worker threads to terminate...";
-#endif
     io_service.stop();
 
     // wait for threads to complete their tasks

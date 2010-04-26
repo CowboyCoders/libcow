@@ -177,7 +177,7 @@ namespace libcow {
         std::vector<int> piece_origin_;
         libtorrent::torrent_handle handle_;
 
-        std::vector<boost::shared_ptr<download_device> > download_devices;
+        std::vector<boost::shared_ptr<download_device> > download_devices_;
 
         std::ifstream file_handle_;
 
