@@ -30,7 +30,7 @@ or implied, of CowboyCoders.
 #include "cow/multicast_server_connection.hpp"
 #include "cow/piece_request.hpp"
 #include "cow/piece_data.hpp"
-#include "buffer.hpp"
+#include "cow/utils/buffer.hpp"
 #include "packetizer.hpp"
 
 #include <fstream>

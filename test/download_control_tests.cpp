@@ -113,7 +113,8 @@ int main(int argc, char* argv[])
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
-    for(size_t i = 0; i < 10; ++i) {
+    for(size_t i = 0; i < 100000; ++i) {
+    
         ctrl->debug_print();
         libcow::progress_info progress_info = ctrl->get_progress();
         std::cout << "State: " << progress_info.state_str() 
