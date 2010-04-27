@@ -71,6 +71,18 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    libcow::progress_info pinfo = ctrl->get_progress();
+    while(pinfo.state() != libcow::progress_info::downloading && 
+          pinfo.state() != libcow::progress_info::seeding     && 
+          pinfo.state() != libcow::progress_info::finished)
+    {
+        std::cout << "waiting for libtorrent: "
+                  << pinfo.state_str() << std::endl;
+        libcow::system::sleep(1000);
+        pinfo = ctrl->get_progress();
+    }
+
+
     std::cout << "testing blocking read...." << std::endl;
 
     std::vector<libcow::piece_request> reqs1;
@@ -96,10 +108,10 @@ int main(int argc, char* argv[])
     char* testbuf2 = new char[4064];
     libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
 
-    std::cout << "read attempt 3: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
-
-    std::cout << "read attempt 1: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    //FIXME: this test depends on file being big_buck_bunny.mpg
+    std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
     std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
     
@@ -113,7 +125,7 @@ int main(int argc, char* argv[])
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
-    for(size_t i = 0; i < 10; ++i) {
+    for(size_t i = 0; i < 1000000; ++i) {
         ctrl->debug_print();
         libcow::progress_info progress_info = ctrl->get_progress();
         std::cout << "State: " << progress_info.state_str() 
