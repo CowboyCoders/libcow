@@ -126,6 +126,11 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
         libcow::progress_info pi = get_progress();
         for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
         {
+            if((int)iter->index < 0 || (int)iter->index > num_pieces()) {
+                BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
+                    << "piece index out of range: " << iter->index;
+                continue;
+            }
             if((int)iter->data.size() < info.piece_size(iter->index)) {
                 BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                     << "trying to add piece with index " << iter->index
