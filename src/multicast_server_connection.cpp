@@ -200,7 +200,7 @@ void multicast_server_connection::handle_receive(const boost::system::error_code
                 libcow::movie_packet movie = packetizer_.unpack_movie_buffer(buffer);
                 //BOOST_LOG_TRIVIAL(info) << "Saving #" << counter_ << ", " << movie.data().size() << " bytes to piece_data at: " << counter_ * (packet_size_- 1);
                 size_t end_byte = counter_ * (packet_size_ - 1) + movie.data().size();
-                if(sizeof(*piece_data_) >= end_byte) {
+                if(piece_size_ >= end_byte) {
                     memcpy(piece_data_ + counter_ * (packet_size_ - 1), movie.data().data(), movie.data().size());
                 }
                 ++counter_;
