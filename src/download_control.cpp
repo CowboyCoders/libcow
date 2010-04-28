@@ -131,11 +131,17 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
                 << info.piece_size(iter->index);
             continue;
         }
-        disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+        
+		if (handle_.status().pieces[iter->index] == 0){
+			disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
 
-        BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
-                                 << iter->index;
-        handle_.add_piece(iter->index, iter->data.data());
+			BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
+                                 << iter->index;		
+			handle_.add_piece(iter->index, iter->data.data());
+		} else {
+			BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: NOT adding piece with index "
+									<< iter->index << "(it's already there!)";		
+		}
     }
 }
 
