@@ -34,9 +34,16 @@ if(WIN32)
 endif(WIN32)
 
 find_package(Boost COMPONENTS system thread log filesystem REQUIRED)
-    
-set(EXECUTABLE_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/bin)
+
+if(UNIX)
+    set(EXECUTABLE_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/bin)
+    set(LIBRARY_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/bin)
+endif(UNIX)
+
+if(WIN32)   
+    set(EXECUTABLE_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/../bin)
+    set(LIBRARY_OUTPUT_PATH ${LIBCOW_SOURCE_DIR}/../bin)
+endif(WIN32)
 
 set(UTILS_INCLUDE_DIR ${LIBCOW_SOURCE_DIR}/../utils/include)
 set(PACKETIZER_INCLUDE_DIR ${LIBCOW_SOURCE_DIR}/../packetizer/include)
