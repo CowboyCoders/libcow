@@ -119,29 +119,32 @@ int download_control::piece_length()
 
 void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
-    libtorrent::torrent_info info = handle_.get_torrent_info();
-    std::vector<piece_data>::const_iterator iter;
+    if(!handle_.is_seed()) {
+        libtorrent::torrent_info info = handle_.get_torrent_info();
+        std::vector<piece_data>::const_iterator iter;
 
-    for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
-    {
-        if((int)iter->data.size() < info.piece_size(iter->index)) {
-            BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
-                << "trying to add piece with index " << iter->index
-                << " and size " << iter->data.size() << ", but expected size is "
-                << info.piece_size(iter->index);
-            continue;
+        libcow::progress_info pi = get_progress();
+        for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
+        {
+            if((int)iter->data.size() < info.piece_size(iter->index)) {
+                BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
+                    << "trying to add piece with index " << iter->index
+                    << " and size " << iter->data.size() << ", but expected size is "
+                    << info.piece_size(iter->index);
+                continue;
+            }
+
+            if (handle_.status().pieces[iter->index] == 0){
+                disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+
+                BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
+                    << iter->index;		
+                handle_.add_piece(iter->index, iter->data.data());
+            } else {
+                BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: NOT adding piece with index "
+                    << iter->index << "(it's already there!)";		
+            }
         }
-        
-		if (handle_.status().pieces[iter->index] == 0){
-			disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
-
-			BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
-                                 << iter->index;		
-			handle_.add_piece(iter->index, iter->data.data());
-		} else {
-			BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: NOT adding piece with index "
-									<< iter->index << "(it's already there!)";		
-		}
     }
 }
 
