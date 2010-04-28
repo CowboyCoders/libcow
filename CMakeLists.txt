@@ -107,6 +107,10 @@ set(CURL_INSTANCE_TEST_SOURCE
     ${TINYXML_SOURCE_DIR}/tinyxmlparser.cpp    
 )
 
+set(BASIC_EXAMPLE_SOURCE
+    ${LIBCOW_SOURCE_DIR}/examples/basic_example.cpp
+)
+
 include_directories(
     ${LIBCOW_SOURCE_DIR}/include
     ${UTILS_INCLUDE_DIR}
@@ -205,3 +209,8 @@ add_dependencies(multicast_server_connection_tests cow)
 add_executable(curl_instance_tests ${CURL_INSTANCE_TEST_SOURCE} ${HEADERS})
 target_link_libraries(curl_instance_tests ${TEST_DEPS})
 add_dependencies(curl_instance_tests cow)
+
+# basic example target
+add_executable(basic_example ${BASIC_EXAMPLE_SOURCE} ${HEADERS})
+target_link_libraries(basic_example ${TEST_DEPS}) 
+add_dependencies(basic_example cow)
