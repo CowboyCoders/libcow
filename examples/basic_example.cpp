@@ -32,36 +32,49 @@ either expressed or implied, of CowboyCoders.
 int main() {
     // Create a cow_client.
     libcow::cow_client basic_example_client;
-    // Start logging.
+    // Start logging. All logging will be sent to a file called basic_example.log.
     basic_example_client.start_logger();
 
     // Set download directory for the movie.
     std::string download_dir = ".";
     basic_example_client.set_download_directory(download_dir); 
 
-    // Set the port to bittorrent.
+    // Set the port to use when downloading using BitTorrent.
     int bt_port = 23454; 
     basic_example_client.set_bittorrent_port(bt_port);
 
-    // A properties map for setting to pass to download_device.
+    // Create a properties map that will be used to configure a libcow::download_device.
     libcow::properties properties;
     // URL to the torrent file.
     properties["torrent"] = "http://cowboycoders.se/big_buck_bunny.mpg.torrent";
+    
+    // Create a program_info struct that we will fill with info in
+    // order to be able to download a movie. In this example we will
+    // download the movie big_bucky_bunny.mpg using only BitTorrent.
+    libcow::program_info program_info;
 
-    // Create a device_map to handle different downloading sources.
+    // Create a device_map that will keep track of the different ways to
+    // download the movie. In this case only BitTorrent is used.
     libcow::device_map device_map;
     // Add torrent as a downloading source.
     device_map["torrent"] = properties;
-
-    // Create a program_info struct and fill it with necessary data.
-    libcow::program_info program_info;
-    program_info.id = 1;
-    program_info.name = "Big Buck Bunny";
-    program_info.description = "'Big' Buck wakes up in his rabbit hole...";
     program_info.download_devices = device_map;
 
-    // Start downloading and save the pointer (later needed to stop the download).
+    // Give the program an ID.
+    program_info.id = 0;
+    // Give the program a name.
+    program_info.name = "Big Buck Bunny";
+    // Give the program a description.
+    program_info.description = "'Big' Buck wakes up in his rabbit hole...";
+
+
+
+    // Start downloading the movie. A libcow::download_control pointer is created
+    // that can be used to extract information about the download, as well as stop it.
     libcow::download_control* controller = basic_example_client.start_download(program_info);
+
+
+
     std::cout << "Running basic_example, press ENTER to quit...";
     char q;
     do {
@@ -70,9 +83,9 @@ int main() {
     while(q != '\n');
     std::cout << "Quitting..." << std::endl;
     
-    // Stop download.
+    // Stop the download.
     basic_example_client.remove_download(controller);
-    // Stop logging.
+    // Stop the logging.
     basic_example_client.stop_logger();
     // Quit :-)
     return 0;

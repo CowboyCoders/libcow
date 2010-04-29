@@ -143,6 +143,40 @@ namespace libcow {
         int download_device_id_;
         std::map<int,std::string> piece_sources_;
 	};
+
+    /** \example basic_example.cpp
+     *  This is an example displaying how to use the libcow::cow_client API.
+     *  A basic libcow::cow_client will be created that will only be able to
+     *  download data using BitTorrent. In this example we will manually
+     *  have to provide the info that libcow::cow_client needs in order
+     *  to use BitTorrent.
+     */
+    
+    /** \example program_table_example.cpp
+     *  This is an example displaying how to use the libcow::cow_client API.
+     *  A basic libcow::cow_client will be created that will only be able to
+     *  download data using BitTorrent. In this example we will download
+     *  the information that libcow::cow_client needs from a libcow::program_table %server,
+     *  which hosts an XML file specifying all needed properties.
+     */
+
+    /** \example on_demand_example.cpp
+     *  This is an example displaying how to use the libcow::cow_client API.
+     *  A basic libcow::cow_client will be created that will both be able to
+     *  download data using BitTorrent, and request data from an on
+     *  demand %server as well. In this example we will download
+     *  the information that libcow::cow_client needs from a libcow::program_table %server,
+     *  which hosts an XML file specifying all needed properties.
+     */
+
+    /** \example multicast_example.cpp
+     *  This is an example displaying how to use the libcow::cow_client API.
+     *  A basic libcow::cow_client will be created that will both be able to
+     *  download data using BitTorrent, and receive data using Multicast.
+     *  In this example we will download
+     *  the information that libcow::cow_client needs from a libcow::program_table %server,
+     *  which hosts an XML file specifying all needed properties.
+     */
 }
 
 #endif // ___libcow_cow_client___
