@@ -270,6 +270,21 @@ bool cow_client::exit_logger_thread()
     return !logger_thread_running_;
 }
 
+download_control* 
+cow_client::torrent_handle_to_download_control(const libtorrent::torrent_handle& handle)
+{
+    boost::mutex::scoped_lock lock(download_controls_mutex_);
+    download_control_vector::iterator it;
+    for(it = download_controls_.begin(); it != download_controls_.end(); ++it)
+    {
+        download_control& dc = *it;
+        if(dc.handle_ == handle) {
+            return &dc;
+        }
+    }
+    return 0;
+}
+
 void cow_client::logger_thread_function()
 {
     while(true) 
@@ -283,23 +298,26 @@ void cow_client::logger_thread_function()
         while(alert && !exit_logger_thread()) {
             if(libtorrent::hash_failed_alert* hash_alert = libtorrent::alert_cast<libtorrent::hash_failed_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: hash failed for piece: " << hash_alert->piece_index;
+                download_control* dc = torrent_handle_to_download_control(hash_alert->handle);
+                dc->handle_alert(hash_alert);
             } else if(libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: piece: " << piece_alert->piece_index << " was added by libtorrent"; 
+                download_control* dc = torrent_handle_to_download_control(piece_alert->handle);
+                dc->handle_alert(piece_alert);
             } else if(libtorrent::state_changed_alert* state_alert = libtorrent::alert_cast<libtorrent::state_changed_alert>(alert)) {
 		        libtorrent::torrent_status::state_t old_state = state_alert->prev_state;
                 libtorrent::torrent_status::state_t new_state = state_alert->state;
                 
-                if(old_state == libtorrent::torrent_status::checking_files) {
-                    BOOST_LOG_TRIVIAL(debug) << "cow_client: done hashing existing files";
-                }
-
-                if(new_state == libtorrent::torrent_status::finished ||
-                   new_state == libtorrent::torrent_status::seeding ||
-                   new_state == libtorrent::torrent_status::downloading)
+                if((old_state == libtorrent::torrent_status::checking_files ||
+                    old_state == libtorrent::torrent_status::checking_resume_data) &&
+                   (new_state == libtorrent::torrent_status::finished ||
+                    new_state == libtorrent::torrent_status::seeding ||
+                    new_state == libtorrent::torrent_status::downloading))
                 {
-                    // only emit this one time at startup,
-                    // i.e. check that were not downloading and are beginning to seed
+                    // were done hashing files and are now ready to seed or download.
                     BOOST_LOG_TRIVIAL(debug) << "cow_client: libtorrent is up and running";
+                    download_control* dc = torrent_handle_to_download_control(state_alert->handle);
+                    dc->handle_alert(state_alert);
                 }
                 
             } else {

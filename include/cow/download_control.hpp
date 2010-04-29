@@ -35,6 +35,7 @@ or implied, of CowboyCoders.
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
 #include <libtorrent/torrent_handle.hpp>
+#include <libtorrent/alert.hpp>
 
 namespace libcow {
 
@@ -90,7 +91,7 @@ namespace libcow {
         */
         size_t file_size() const;
 
-        std::string target_filename() const { throw "not implemented"; }
+        std::string filename() const;
 
        /**
         * This function reads data from offset into the buffer. The number
@@ -108,6 +109,15 @@ namespace libcow {
         * @return True if the data has been downloaded, otherwise false.
         */
         bool has_data(size_t offset, size_t length);
+
+        /**
+         * This function checks wether the supplied pieces are downloaded 
+         * and returns a vector of the pieces which aren't.
+         *
+         * @param pieces The pieces for which the availability shoud be checked for
+         * @return a vector that contatins the pieces which aren't downloaded 
+         */
+        std::vector<int> has_pieces(const std::vector<int>& pieces);
 
         size_t bytes_available(size_t offset) const;
 
@@ -164,6 +174,25 @@ namespace libcow {
         */
         void add_download_device(download_device* dd);
 
+        /**
+         * The supplied boost::function callback will be called when all the bittorrent pieces in 
+         * the supplied std::vector pieces are downloaded. Note that this function is 
+         * asynchronous (not blocking)
+         *
+         * @param callback The function to call when all the pieces are downloaded
+         * @param pieces A vector describing which pieces that should be downloaded
+         */
+        void wait_for_pieces(const std::vector<int>& pieces, boost::function<void(std::vector<int>)> callback);
+        
+        /**
+         * The supplied boost::function callback will be called when the download_control is intitialized and ready.
+         * This includes hashing existing files, connecting to a bittorrent tracker etc.
+         * Note that this function is asynchronous (not blocking)
+         *
+         * @param callback The function to call when all the pieces are downloaded
+         */
+        void wait_for_startup(boost::function<void(void)> callback);
+
         int critical_window()
         {
             return critical_window_;
@@ -182,6 +211,33 @@ namespace libcow {
                                   int last_piece,
                                   bool force_request,
                                   boost::system::error_code& error);
+        
+        // used by cow_client when a new libtorrent::alert arrives.
+        // this is possible since cow_client is friend
+        // with download_control. we don't want to make this public.
+        void handle_alert(const libtorrent::alert* event);
+
+        void update_piece_requests(int piece_id);
+        void signal_startup_callbacks();
+        
+        class piece_request
+        {
+        public:
+            typedef boost::function<void(std::vector<int>)> callback;
+            
+            piece_request(std::list<int>* pieces, callback func, std::vector<int>* org_pieces)
+                : pieces_(pieces),
+                  callback_(func),
+                  org_pieces_(org_pieces) {} // empty
+            
+            std::list<int>* pieces_;
+            callback callback_;
+            std::vector<int>* org_pieces_;
+        };
+        
+        std::multimap<int, piece_request> piece_nr_to_request_;
+        
+        std::vector<boost::function<void(void)> > startup_complete_callbacks_;
 
         std::map<int,std::string> * piece_sources_;
         std::vector<int> piece_origin_;
@@ -193,8 +249,11 @@ namespace libcow {
 
         dispatcher disp_;
 
+
         int critical_window_;
         std::vector<bool> critically_requested_;
+        
+        bool is_libtorrent_ready_;
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;
