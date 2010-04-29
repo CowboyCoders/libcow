@@ -118,15 +118,18 @@ namespace libcow {
 
     private:
         libtorrent::torrent_handle create_torrent_handle(const properties& props);
+        download_control* torrent_handle_to_download_control(const libtorrent::torrent_handle& handle); 
         void logger_thread_function();
         bool exit_logger_thread();
 
         typedef boost::ptr_vector<libcow::download_control> download_control_vector;
+        download_control_vector download_controls_;
 
+        boost::mutex download_controls_mutex_;
+        
         download_device_manager dd_manager_;
         libtorrent::session session_;
         std::string download_directory_;             
-        download_control_vector download_controls_;
     
 		boost::shared_ptr<boost::thread> logger_thread_ptr_;
         bool logger_thread_running_;
