@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of CowboyCoders.
 */
 
+
 #include "cow/libcow_def.hpp"
 #include "cow/download_control.hpp"
 #include "cow/piece_data.hpp"
@@ -123,14 +124,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
         libtorrent::torrent_info info = handle_.get_torrent_info();
         std::vector<piece_data>::const_iterator iter;
 
-        libcow::progress_info pi = get_progress();
+        libtorrent::torrent_status status = handle_.status();
         for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
         {
-            if((int)iter->index < 0 || (int)iter->index > num_pieces()) {
-                BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
-                    << "piece index out of range: " << iter->index;
-                continue;
-            }
             if((int)iter->data.size() < info.piece_size(iter->index)) {
                 BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                     << "trying to add piece with index " << iter->index
@@ -138,17 +134,17 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
                     << info.piece_size(iter->index);
                 continue;
             }
-
-            if (handle_.status().pieces[iter->index] == 0){
-                disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
-
-                BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
-                    << iter->index;		
-                handle_.add_piece(iter->index, iter->data.data());
-            } else {
-                BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: NOT adding piece with index "
-                    << iter->index << "(it's already there!)";		
+            
+            const libtorrent::bitfield& pieces = status.pieces;
+            if(pieces[iter->index]) {
+                continue;
             }
+            
+            disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+
+            BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
+                                     << iter->index;
+            handle_.add_piece(iter->index, iter->data.data());
         }
     }
 }
@@ -342,7 +338,7 @@ void download_control::debug_print()
 
 }
 
-void download_control::set_playback_position(size_t offset)
+void download_control::set_playback_position(size_t offset, bool force_request)
 {
     // don't fiddle with download strategies if seeding
     if(handle_.status().state == libtorrent::torrent_status::seeding) {
@@ -354,7 +350,7 @@ void download_control::set_playback_position(size_t offset)
     // create a vector of pieces to prioritize
     int first_piece_to_prioritize = offset / piece_length();
 
-    std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
+    //std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
 
     // set low priority for pieces before playback position
     for(int i = 0; i < first_piece_to_prioritize; ++i) {
@@ -390,14 +386,16 @@ void download_control::set_playback_position(size_t offset)
             boost::bind(&download_control::fetch_missing_pieces, this, 
                         dev, 
                         first_piece_to_prioritize, 
-                        first_piece_to_prioritize + critical_window() - 1, 
+                        first_piece_to_prioritize + critical_window() - 1,
+                        force_request,
                         _1));
     }
 }
 
 void download_control::fetch_missing_pieces(download_device* dev, 
                                             int first_piece, 
-                                            int last_piece, 
+                                            int last_piece,
+                                            bool force_request,
                                             boost::system::error_code& error)
 {
     assert(last_piece >= first_piece);
@@ -414,13 +412,18 @@ void download_control::fetch_missing_pieces(download_device* dev,
         if(i >= num_pieces()) {
             break;
         }
-        // request only pieces that we don't already have or 
-        // haven't alread requested.
-        if(!pieces[i] && !critically_requested_[i]) {
+        /* Request only pieces that we don't already have or 
+         * haven't alread requested. Always request already 
+         * requested pieces if force_request is set to true 
+         * (but never request pieces that we already have).
+         */
+        if(!pieces[i] && (force_request || !critically_requested_[i])) {
             reqs.push_back(libcow::piece_request(piece_length(), i, 1));
             critically_requested_[i] = true;
+            
             BOOST_LOG_TRIVIAL(debug) 
-                << "Falling back to random access download devices for piece " << i;
+                << "Falling back to random access download devices for piece " << i
+                << (force_request ? " (forced request)" : "");
         }
     }
 

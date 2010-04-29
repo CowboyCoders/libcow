@@ -112,13 +112,22 @@ namespace libcow {
         size_t bytes_available(size_t offset) const;
 
         /**
-         * This function sets the current playback position. The piece at
+         * This function sets the current playback position, i.e the region
+         * of the file that libcow should prioritize for download. The piece at
          * 'offset' and a few of the following pieces will be prioritized 
          * for download. The number of pieces to prioritize is set by calling
          * set_critical_window.
+         * If the critical window is not filled in time, requests will be
+         * made to the random access devices if any such download devices
+         * are registered. This timeout can be set when the download_control is
+         * created. Set force_request to true to allow pieces that have
+         * already been requested to be requested again (useful when recovering
+         * from network failures etc.).
+         *
          * @param offset The byte offset of the current playback position.
+         * @param force_request Allow possibly redundant requests.
          */
-        void set_playback_position(size_t offset);
+        void set_playback_position(size_t offset, bool force_request = false);
 
        /**
         * Returns the length of a piece.
@@ -170,7 +179,8 @@ namespace libcow {
     private:
         void fetch_missing_pieces(download_device* dev, 
                                   int first_piece, 
-                                  int last_piece, 
+                                  int last_piece,
+                                  bool force_request,
                                   boost::system::error_code& error);
 
         std::map<int,std::string> * piece_sources_;
