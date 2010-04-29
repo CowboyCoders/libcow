@@ -43,6 +43,7 @@ or implied, of CowboyCoders.
 #include <time.h>
 #include <cstdlib>
 #include <map>
+#include <cassert>
 
 using namespace libcow;
 
@@ -241,6 +242,15 @@ size_t download_control::bytes_available(size_t offset) const
     return info.file_at(0).size - offset;
 }
 
+
+std::string download_control::filename() const
+{
+    assert(handle_.get_torrent_info().files().num_files() == 1);
+    
+    libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
+    return file_entry.path;
+}
+
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
 {
 	while(!has_data(offset, buffer.size())){
@@ -248,18 +258,15 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     }
 
     if(!file_handle_.is_open()) {
-        // FIXME: reads from file with index 0 ONLY!
-        libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-    std::string filename = file_entry.path;
-
+        std::string file_name = filename();
 #if 0
         std::cout << "filename: " << filename << std::endl;
         std::cout << "offset: " << offset << " bufsize: " << buffer.size() << std::endl;
 #endif
 
-        file_handle_.open(filename.c_str(), std::ios_base::in | std::ios_base::binary);
+        file_handle_.open(file_name.c_str(), std::ios_base::in | std::ios_base::binary);
         if(!file_handle_.is_open()) {
-            BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << filename;
+            BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << file_name;
             return 0;
         }
 #if 0
@@ -495,6 +502,7 @@ void download_control::update_piece_requests(int piece_id)
                 delete pieces;
                 func(*org_pieces);
                 delete org_pieces;
+                piece_nr_to_request_.erase(it);
             } 
         }
 }

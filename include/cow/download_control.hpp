@@ -91,7 +91,7 @@ namespace libcow {
         */
         size_t file_size() const;
 
-        std::string target_filename() const { throw "not implemented"; }
+        std::string filename() const;
 
        /**
         * This function reads data from offset into the buffer. The number
