@@ -121,9 +121,15 @@ set(BASIC_EXAMPLE_SOURCE
 set(PROGRAM_TABLE_EXAMPLE_SOURCE
     ${LIBCOW_SOURCE_DIR}/examples/program_table_example.cpp
 )
+
 set(ON_DEMAND_EXAMPLE_SOURCE
     ${LIBCOW_SOURCE_DIR}/examples/on_demand_example.cpp
 )
+
+set(MULTICAST_EXAMPLE_SOURCE
+    ${LIBCOW_SOURCE_DIR}/examples/multicast_example.cpp
+)
+
 include_directories(
     ${LIBCOW_SOURCE_DIR}/include
     ${UTILS_INCLUDE_DIR}
@@ -237,3 +243,8 @@ add_dependencies(program_table_example cow)
 add_executable(on_demand_example ${ON_DEMAND_EXAMPLE_SOURCE} ${HEADERS})
 target_link_libraries(on_demand_example ${TEST_DEPS}) 
 add_dependencies(on_demand_example cow)
+
+# multicast example target
+add_executable(multicast_example ${MULTICAST_EXAMPLE_SOURCE} ${HEADERS})
+target_link_libraries(multicast_example ${TEST_DEPS}) 
+add_dependencies(multicast_example cow)
