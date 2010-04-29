@@ -30,12 +30,13 @@ or implied, of CowboyCoders.
 #define ___libcow_download_control___
 
 #include "cow/utils/buffer.hpp"
-#include "dispatcher.hpp"
+#include "cow/dispatcher.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/alert.hpp>
+#include <boost/thread.hpp>
 
 namespace libcow {
 
@@ -54,10 +55,14 @@ namespace libcow {
         * Creates a new download_control and initializes attributes.
         * @param handle The torrent_handle which controls the BitTorrent
         * part of the download.
+        * @param critical_window_length HENRY, document this
+        * @param critical_window_timeout HENRY, document this
+        * @param id a unique id for this download device
         */
         download_control(const libtorrent::torrent_handle& handle, 
                          int critical_window_length,
-                         int critical_window_timeout);
+                         int critical_window_timeout,
+                         int id);
         ~download_control();
 
        /**
@@ -118,7 +123,15 @@ namespace libcow {
          * @return a vector that contatins the pieces which aren't downloaded 
          */
         std::vector<int> has_pieces(const std::vector<int>& pieces);
-
+        
+        /**
+         * The number of sequential bytes available from 
+         * the position offset.
+         *
+         * @param offset the position in the file (in bytes) from
+         *               where the count should start.
+         * @return the number of bytes
+         */
         size_t bytes_available(size_t offset) const;
 
         /**
@@ -193,17 +206,49 @@ namespace libcow {
          */
         void wait_for_startup(boost::function<void(void)> callback);
 
+        /**
+         * HENRY, document this!
+         */
         int critical_window()
         {
             return critical_window_;
         }
 
+        /**
+         * HENRY, document this!
+         */
         void set_critical_window(int num_pieces)
         {
             critical_window_ = num_pieces;
         }
 
+        /**
+         * Checks wether the download_controller is downloading and 
+         * sharing data or not.
+         *
+         * @return true if the download_controller is active, otherwise false
+         */
+        bool is_running() const
+        {
+            boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
+            return is_libtorrent_ready_;
+        }
+        
+        /**
+         * Prints useful debug information
+         */
         void debug_print();
+
+        /**
+         * Returns the id of this download_control.
+         * The id is unique for a download_control.
+         *
+         * @return the id
+         */
+        int id()
+        {
+            return id_;
+        }
 
     private:
         void fetch_missing_pieces(download_device* dev, 
@@ -247,13 +292,17 @@ namespace libcow {
 
         std::ifstream file_handle_;
 
-        dispatcher disp_;
-
+        dispatcher download_disp_;
+        dispatcher alert_disp_;
 
         int critical_window_;
         std::vector<bool> critically_requested_;
         
         bool is_libtorrent_ready_;
+        mutable boost::mutex libtorrent_ready_mutex_;
+        boost::mutex startup_callback_mutex_;
+        boost::mutex map_mutex_; 
+        int id_; 
 
         // cow_client should have access to the torrent_handle
         friend class libcow::cow_client;

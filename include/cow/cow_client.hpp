@@ -122,7 +122,7 @@ namespace libcow {
         void logger_thread_function();
         bool exit_logger_thread();
 
-        typedef boost::ptr_vector<libcow::download_control> download_control_vector;
+        typedef std::vector<download_control*> download_control_vector;
         download_control_vector download_controls_;
 
         boost::mutex download_controls_mutex_;
