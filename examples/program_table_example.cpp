@@ -9,20 +9,13 @@ int main() {
     int bt_port = 23454; 
     basic_example_client.set_bittorrent_port(bt_port);
 
-    libcow::properties properties;
-    properties["torrent"] = "http://cowboycoders.se/big_buck_bunny.mpg.torrent";
-
-    libcow::device_map device_map;
-    device_map["torrent"] = properties;
-
-    libcow::program_info program_info;
-    program_info.id = 1;
-    program_info.name = "Big Buck Bunny";
-    program_info.description = "'Big' Buck wakes up in his rabbit hole...";
-    program_info.download_devices = device_map;
+    libcow::program_table table;
+    std::string server_url = "http://cowboycoders.se/program_table.xml";
+    table.load_from_http(server_url);
+    libcow::program_info program_info = table.at(0);
 
     basic_example_client.start_download(program_info);
-    std::cout << "Running basic_example, press ENTER to quit...";
+    std::cout << "Running program_table_example, press ENTER to quit...";
     char q;
     do {
         std::cin.get(q);

@@ -40,7 +40,7 @@ using libcow::program_sources;
 
 std::vector<program_sources*> libcow::get_program_table(const std::string& program_table_host)
 {
-    std::string url = program_table_host + "/programtable.xml";
+    std::string url = program_table_host + "/program_table.xml";
 
     BOOST_LOG_TRIVIAL(debug) << "Downloading program table from '" << url << "'";
     std::string xml = http_get_as_string(url);

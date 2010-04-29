@@ -118,6 +118,12 @@ set(BASIC_EXAMPLE_SOURCE
     ${LIBCOW_SOURCE_DIR}/examples/basic_example.cpp
 )
 
+set(PROGRAM_TABLE_EXAMPLE_SOURCE
+    ${LIBCOW_SOURCE_DIR}/examples/program_table_example.cpp
+)
+set(ON_DEMAND_EXAMPLE_SOURCE
+    ${LIBCOW_SOURCE_DIR}/examples/on_demand_example.cpp
+)
 include_directories(
     ${LIBCOW_SOURCE_DIR}/include
     ${UTILS_INCLUDE_DIR}
@@ -221,3 +227,13 @@ add_dependencies(curl_instance_tests cow)
 add_executable(basic_example ${BASIC_EXAMPLE_SOURCE} ${HEADERS})
 target_link_libraries(basic_example ${TEST_DEPS}) 
 add_dependencies(basic_example cow)
+
+# program table example target
+add_executable(program_table_example ${PROGRAM_TABLE_EXAMPLE_SOURCE} ${HEADERS})
+target_link_libraries(program_table_example ${TEST_DEPS}) 
+add_dependencies(program_table_example cow)
+
+# on demand example target
+add_executable(on_demand_example ${ON_DEMAND_EXAMPLE_SOURCE} ${HEADERS})
+target_link_libraries(on_demand_example ${TEST_DEPS}) 
+add_dependencies(on_demand_example cow)
