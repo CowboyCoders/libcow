@@ -74,14 +74,19 @@ namespace libcow {
        
         
        /**
-        * This function returns the download_control for a certain program.
-        * @param program A program info struct.
-        * @return A pointer to the download_control for the specified program.
+        * This function will start downloading the selected program using BitTorrent.
+        * If any download_devices have been registered using register_download_device_factory,
+        * the client will initialize these devices and start gathering data from them as well.
+        * @param program The the program to start downloading.
+        * @return A pointer to the download_control used for this program.
         */
         download_control* start_download(const libcow::program_info& program);
 
+       /**
+        * This function returns a list of all active libcow::download_controls.
+        * @return A list of libcow::download_control pointers for all active downloads..
+        */
         const std::list<download_control*>& get_active_downloads() const;
-
 
        /**
         * This function will stop the download of the specified program, and
@@ -90,13 +95,6 @@ namespace libcow {
         */
         void remove_download(download_control* download);
 
-       /**
-        * This function will start downloading the selected program using BitTorrent.
-        * If any download_devices have been registered using register_download_device_factory,
-        * the client will initialize these devices and start gathering data from them as well.
-        * @param program_id The id of the program to start downloading.
-        * @return A pointer to the download_control used for this program.
-        */
        /**
         * This function starts the logger for this class in a new thread.
         */

@@ -57,7 +57,7 @@ namespace libcow {
         * and opens it using the specified properties.
         * @param id The unique id to assign to the download_device.
         * @param ident The string representation of the download_device.
-        * @param properties A map of properties to open the device with.
+        * @param pmap A map of properties to open the device with.
         * @return A new download_device specified by the unique identifier,
         * returns 0 if no such download_device type is registered.
         */

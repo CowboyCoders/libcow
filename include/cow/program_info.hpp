@@ -53,6 +53,10 @@ namespace libcow {
         * The description of the program.
         */
         std::string description;
+
+       /**
+        * A map of download_devices to use for this program. 
+        */
         libcow::device_map download_devices;
     };
 }

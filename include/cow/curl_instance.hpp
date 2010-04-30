@@ -47,6 +47,10 @@ namespace libcow
      struct curl_init_exception 
          : public std::exception
      {
+        /**
+         * Throw the initialisation exception.
+         * @return The exception.
+         */
          virtual const char* what() const throw()
          {
              return "Failed to initialize curl";

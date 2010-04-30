@@ -81,6 +81,13 @@ namespace libcow {
             return handle_.get_torrent_info().num_pieces();
         }
 
+       /**
+        * This function will try to make sure that the byte range
+        * is downloaded by requesting it from a random access download device.
+        * WARNING: This method is not yet implemented.
+        * @param offset The offset to start requesting from.
+        * @param length Number of bytes from offset to request.
+        */
         void pre_buffer(size_t offset, size_t length);
 
        /**
@@ -96,11 +103,16 @@ namespace libcow {
         */
         size_t file_size() const;
 
+       /**
+        * Returns the filename for this download.
+        * @return The filename.
+        */
         std::string filename() const;
 
        /**
         * This function reads data from offset into the buffer. The number
         * of bytes to read is determined by the size of the buffer.
+        * @param offset The byte offset to start reading from.
         * @param buffer The buffer to read data to.
         * @return The number of bytes actually read.
         */
