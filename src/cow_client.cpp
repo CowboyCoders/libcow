@@ -346,7 +346,7 @@ void cow_client::logger_thread_function()
                 }
                 
             } else {
-                BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
+                // BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
             }
             alert_ptr = session_.pop_alert();
             alert = alert_ptr.get();
