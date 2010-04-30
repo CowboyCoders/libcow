@@ -157,9 +157,12 @@ bool program_table::load_from_file(const std::string& file_name)
     return load_from_string(s);    
 }
 
-bool program_table::load_from_http(const std::string& url)
+bool program_table::load_from_http(const std::string& url, size_t timeout)
 {
-    std::string s = libcow::http_get_as_string(url);
+    std::string s = libcow::http_get_as_string(url, timeout);
+    if(s == "") {
+        return false;
+    } 
     BOOST_LOG_TRIVIAL(debug) << "program_table: Downloaded program table with size:" << s.length() << ".";
     return load_from_string(s);
 }

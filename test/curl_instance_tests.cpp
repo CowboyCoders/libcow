@@ -45,7 +45,7 @@ program_info* parse_program_info(TiXmlElement* p) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string program_table = http_get_as_string("cowboycoders.se/program_table.xml");
+    std::string program_table = http_get_as_string("cowboycoders.se/program_table.xml", 120);
     std::cout << "download size:" << program_table.length() << "\n";
 
     std::cout << program_table << "\n";

@@ -47,10 +47,11 @@ int main() {
     // will be fetched from a web server.
     libcow::program_table table;
 
-    // URL to the XML file.
+    // URL to the XML file and timeout for the connection (in seconds).
     std::string server_url = "http://cowboycoders.se/program_table.xml";
+    size_t timeout = 120;
     // Download and parse the XML. Creates a table of all available programs.
-    table.load_from_http(server_url);
+    table.load_from_http(server_url, timeout);
     // Retrieve the info for program with ID 0, which is big_buck_bunny.mpg.
     libcow::program_info program_info = table.at(0);
 

@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
         "multicast");
 
     libcow::program_table prog_table;
-    prog_table.load_from_http("cowboycoders.se/program_table.xml");
+    prog_table.load_from_http("cowboycoders.se/program_table.xml",120);
 
     std::cout << "starting download" << std::endl;
     libcow::download_control* ctrl = client.start_download(prog_table.at(0));

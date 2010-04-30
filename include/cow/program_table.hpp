@@ -13,7 +13,7 @@ namespace libcow {
 
         bool load_from_file(const std::string& file_name);
 
-        bool load_from_http(const std::string& url);
+        bool load_from_http(const std::string& url, size_t timeout);
 
         bool load_from_string(const std::string& s);
 
