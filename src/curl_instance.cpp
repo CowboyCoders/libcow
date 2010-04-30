@@ -48,7 +48,7 @@ size_t stringstream_write_data(void* buffer, size_t siz, size_t nmemb, void* dat
 /*
  * HTTP GET -> std::string
  */
-std::string libcow::http_get_as_string(const std::string& url)
+std::string libcow::http_get_as_string(const std::string& url,size_t timeout)
 {
     curl_instance curl(url);
     CURLcode res;
@@ -58,11 +58,13 @@ std::string libcow::http_get_as_string(const std::string& url)
 
     curl_easy_setopt(curl.curl, CURLOPT_WRITEDATA, &ss);
     curl_easy_setopt(curl.curl, CURLOPT_WRITEFUNCTION, &stringstream_write_data);
+    curl_easy_setopt(curl.curl, CURLOPT_TIMEOUT, timeout);
 
     res = curl_easy_perform(curl.curl);
 
     if(res != CURLE_OK) {
         BOOST_LOG_TRIVIAL(error) << "Download failed";
+        return std::string("");
     }
 
     return ss.str(); //std::string(ss.str());

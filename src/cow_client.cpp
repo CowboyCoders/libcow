@@ -143,7 +143,8 @@ libtorrent::torrent_handle cow_client::create_torrent_handle(const properties& p
     if (torrent_it != props.end()) {
 
         const std::string& torrent = torrent_it->second;
-        std::string torrent_file = http_get_as_string(torrent);
+        size_t timeout = 120; // in seconds, should we be able to configure this?
+        std::string torrent_file = http_get_as_string(torrent,timeout); 
 
     	try {
             // Set the torrent file

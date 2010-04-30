@@ -62,7 +62,6 @@ set(LIBCOW_SOURCE
     ${LIBCOW_SOURCE_DIR}/src/on_demand_server_connection.cpp
     ${LIBCOW_SOURCE_DIR}/src/on_demand_server_connection_factory.cpp    
     ${LIBCOW_SOURCE_DIR}/src/program_sources.cpp
-    ${LIBCOW_SOURCE_DIR}/src/program_table_server_connection.cpp
     ${LIBCOW_SOURCE_DIR}/src/system.cpp
     ${LIBCOW_SOURCE_DIR}/src/tinyxml.cpp
     ${LIBCOW_SOURCE_DIR}/src/tinyxmlerror.cpp
@@ -91,7 +90,6 @@ set(LIBCOW_HEADERS
     ${LIBCOW_SOURCE_DIR}/include/cow/piece_request.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/program_info.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/program_sources.hpp
-    ${LIBCOW_SOURCE_DIR}/include/cow/program_table_server_connection.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/progress_info.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/program_table.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/system.hpp

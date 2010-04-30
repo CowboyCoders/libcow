@@ -89,7 +89,7 @@ namespace libcow {
         * @return The libcow::program_info for the specified index.
         */
         libcow::program_info& operator[](size_t index);
-            
+       
        /**
         * Returns the iterator for the program table, starting at the beginning.
         * @return An iterator.

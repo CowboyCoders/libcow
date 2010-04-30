@@ -39,7 +39,7 @@ namespace libcow
     /**
      * Performs a HTTP GET request.
      */
-    LIBCOW_EXPORT std::string http_get_as_string(const std::string& url);
+    LIBCOW_EXPORT std::string http_get_as_string(const std::string& url, size_t timeout);
 
     /**
      * Thrown if the internal cURL instance couldn't be initialized.

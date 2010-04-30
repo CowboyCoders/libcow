@@ -37,7 +37,6 @@ or implied, of CowboyCoders.
 #include "cow/program_info.hpp"
 #include "cow/on_demand_server_connection.hpp"
 #include "cow/download_device.hpp"
-#include "cow/program_table_server_connection.hpp"
 #include "cow/piece_data.hpp"
 #include "cow/piece_request.hpp"
 #include "cow/download_control.hpp"
