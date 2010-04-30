@@ -508,11 +508,6 @@ void download_control::wait_for_pieces(const std::vector<int>& pieces, boost::fu
 {
     if(is_running()) {
         std::vector<int> missing = has_pieces(pieces);
-        std::vector<int>::iterator it;
-        for(it = missing.begin(); it != missing.end(); ++it)
-        {
-            std::cout << "missing: " << *it << std::endl;
-        }
         if(missing.size() != 0) {
             std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());
             std::vector<int>* org_pieces = new std::vector<int>(pieces);
@@ -536,7 +531,6 @@ void download_control::wait_for_pieces(const std::vector<int>& pieces, boost::fu
             callback(pieces);
         }
     } else {
-        std::cout << "missing pieces is waiting for startup" << std::endl;
         wait_for_startup(boost::bind(&download_control::wait_for_pieces,this,pieces,callback));
     }
 
@@ -589,7 +583,6 @@ void download_control::handle_alert(const libtorrent::alert* event)
             boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
             is_libtorrent_ready_ = true;
         }
-        std::cout << "got libtorrent_ready" << std::endl;
         alert_disp_.post<boost::function<void()> >(boost::bind(&download_control::signal_startup_callbacks,this));
     } else if(const libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
         int piece_id = piece_alert->piece_index;
