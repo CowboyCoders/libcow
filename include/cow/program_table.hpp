@@ -37,7 +37,7 @@ namespace libcow {
         * @return True if it was possible to load the configuration,
         * otherwise false.
         */
-        bool load_from_http(const std::string& url);
+        bool load_from_http(const std::string& url, size_t timeout);
 
        /**
         * Tries to load an XML configuration from a string.
