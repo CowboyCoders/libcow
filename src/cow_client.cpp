@@ -52,6 +52,9 @@ using namespace libcow;
 const int cow_client::default_max_num_log_messages_ = 1000;
 const int cow_client::default_logging_interval_ = 1; // seconds
 
+// DANIEL, these should use some kind of namespace! 
+// Reason: for clarity, it seems to have them without namespace
+// you could also make them private, that's your choice...
 template <typename T>
 struct match_second 
 {
@@ -66,6 +69,9 @@ struct match_second
     }
 };
 
+// DANIEL, these should use some kind of namespace! 
+// Reason: for clarity, it seems to have them without namespace
+// you could also make them private, that's your choice...
 template <typename T>
 struct check_pointer_value
 {

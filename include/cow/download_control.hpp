@@ -82,15 +82,6 @@ namespace libcow {
         }
 
        /**
-        * This function will try to make sure that the byte range
-        * is downloaded by requesting it from a random access download device.
-        * WARNING: This method is not yet implemented.
-        * @param offset The offset to start requesting from.
-        * @param length Number of bytes from offset to request.
-        */
-        void pre_buffer(size_t offset, size_t length);
-
-       /**
         * This function will try to make sure that the requested pieces
         * are downloaded by requesting them from a random access download device.
         * @param requests A vector of requests to download.
@@ -240,11 +231,7 @@ namespace libcow {
          *
          * @return true if the download_controller is active, otherwise false
          */
-        bool is_running() const
-        {
-            boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-            return is_libtorrent_ready_;
-        }
+        bool is_running();
         
         /**
          * Prints useful debug information
@@ -311,7 +298,7 @@ namespace libcow {
         std::vector<bool> critically_requested_;
         
         bool is_libtorrent_ready_;
-        mutable boost::mutex libtorrent_ready_mutex_;
+        boost::mutex libtorrent_ready_mutex_;
         boost::mutex startup_callback_mutex_;
         boost::mutex map_mutex_; 
         int id_; 

@@ -299,15 +299,17 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     return static_cast<size_t>(file_handle_.gcount());
 }
 
-void download_control::pre_buffer(size_t offset, size_t length)
-{
-
-}
-
 void download_control::pre_buffer(const std::vector<libcow::piece_request> requests)
 {
-    std::vector<boost::shared_ptr<download_device> >::iterator it;
+    std::vector<libcow::piece_request>::const_iterator piece_iter;
+    
+    for(piece_iter = requests.begin(); piece_iter != requests.end(); ++piece_iter) {
+        if(handle_.is_valid()) {
+            handle_.piece_priority((*piece_iter).index,7);
+        }
+    }
 
+    std::vector<boost::shared_ptr<download_device> >::iterator it;
     download_device* random_access_device = 0;
 
     for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
@@ -322,7 +324,9 @@ void download_control::pre_buffer(const std::vector<libcow::piece_request> reque
     {
         random_access_device->get_pieces(requests);
     } else {
+         
         BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
+
     }
 }
 
@@ -466,15 +470,32 @@ void download_control::fetch_missing_pieces(download_device* dev,
         dev->get_pieces(reqs);
     }
 }
+bool download_control::is_running()    
+{
+    if(handle_.is_valid()) {
+        libtorrent::torrent_status status = handle_.status();
+        if(status.state == libtorrent::torrent_status::downloading ||
+           status.state == libtorrent::torrent_status::finished ||
+           status.state == libtorrent::torrent_status::seeding) 
+        {
+            return true;
+        }
+        // we might get the event here via callback, need to check 
+        // the bool variable
+        bool ready;
+        {
+            boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
+            ready = is_libtorrent_ready_;
+        }
+        return ready;
+        
+    }
+    return false;
+}
 
 void download_control::wait_for_startup(boost::function<void(void)> callback)
 {
-    bool ready;
-    {
-        boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-        ready = is_libtorrent_ready_;
-    }
-    if(ready) {
+    if(is_running()) {
         callback();
     } else {
         boost::mutex::scoped_lock lock(startup_callback_mutex_);
@@ -485,13 +506,13 @@ void download_control::wait_for_startup(boost::function<void(void)> callback)
         
 void download_control::wait_for_pieces(const std::vector<int>& pieces, boost::function<void(std::vector<int>)> callback)
 {
-    bool ready;
-    {
-        boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-        ready = is_libtorrent_ready_;
-    }
-    if(ready) {
+    if(is_running()) {
         std::vector<int> missing = has_pieces(pieces);
+        std::vector<int>::iterator it;
+        for(it = missing.begin(); it != missing.end(); ++it)
+        {
+            std::cout << "missing: " << *it << std::endl;
+        }
         if(missing.size() != 0) {
             std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());
             std::vector<int>* org_pieces = new std::vector<int>(pieces);
@@ -515,6 +536,7 @@ void download_control::wait_for_pieces(const std::vector<int>& pieces, boost::fu
             callback(pieces);
         }
     } else {
+        std::cout << "missing pieces is waiting for startup" << std::endl;
         wait_for_startup(boost::bind(&download_control::wait_for_pieces,this,pieces,callback));
     }
 
@@ -567,6 +589,7 @@ void download_control::handle_alert(const libtorrent::alert* event)
             boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
             is_libtorrent_ready_ = true;
         }
+        std::cout << "got libtorrent_ready" << std::endl;
         alert_disp_.post<boost::function<void()> >(boost::bind(&download_control::signal_startup_callbacks,this));
     } else if(const libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
         int piece_id = piece_alert->piece_index;
