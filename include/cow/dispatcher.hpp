@@ -26,8 +26,8 @@ authors and should not be interpreted as representing official policies, either 
 or implied, of CowboyCoders.
 */
 
-#ifndef ___dispatcher_h___
-#define ___dispatcher_h___
+#ifndef ___libcow_dispatcher___
+#define ___libcow_dispatcher___
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -96,4 +96,4 @@ namespace libcow {
         boost::asio::deadline_timer deadline_timer;
     };
 }
-#endif // ___dispatcher_h___
+#endif // ___libcow_dispatcher___

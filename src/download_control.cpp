@@ -53,8 +53,7 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
                                    int critical_window_length,
                                    int critical_window_timeout,
                                    int id)
-    : piece_sources_(0),
-      handle_(handle),
+    : handle_(handle),
       download_disp_(critical_window_timeout),
       event_disp_(0),
       critical_window_(critical_window_length),
@@ -131,6 +130,7 @@ int download_control::piece_length()
 /* NOTE: this function is safe to call from different threads
  * since it only calls libtorrent and the event dispatcher 
  */
+//FIXME: queue add_piece calls if libtorrent is still checking hash
 void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
     if(!handle_.is_seed()) {
@@ -531,7 +531,6 @@ void download_control::handle_invoke_when_downloaded(const std::vector<int>& pie
 }
 
 // invoked by event_disp_
-// resources: piece_nr_to_request_
 void download_control::update_piece_requests(int piece_id)
 {
     std::pair<std::multimap<int,piece_request>::iterator,
@@ -557,7 +556,6 @@ void download_control::update_piece_requests(int piece_id)
 }
 
 // invoked by event_disp_
-// resources startup_complete_callbacks_
 void download_control::signal_startup_callbacks()
 {
     std::vector<boost::function<void()> >::iterator it;
@@ -568,14 +566,16 @@ void download_control::signal_startup_callbacks()
     startup_complete_callbacks_.clear();
 }
 
-// called from alert handler thread
-//FIXME: add mutex for is_libtorrent_ready
+// called by the cow_client alert handler thread
 void download_control::handle_alert(const libtorrent::alert* event)
 {
     if(libtorrent::alert_cast<libtorrent::state_changed_alert>(event)) {
-        event_disp_.post(boost::bind(&download_control::set_libtorrent_ready, this));
-        event_disp_.post<boost::function<void()> >(boost::bind(&download_control::signal_startup_callbacks,this));
-    } else if(const libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
+        event_disp_.post(
+            boost::bind(&download_control::set_libtorrent_ready, this));
+        event_disp_.post<boost::function<void()> >(
+            boost::bind(&download_control::signal_startup_callbacks,this));
+    } else if(const libtorrent::piece_finished_alert* piece_alert = 
+                libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
         int piece_id = piece_alert->piece_index;
         event_disp_.post<boost::function<void()> >(boost::bind(&download_control::update_piece_requests,this,piece_id));
     }

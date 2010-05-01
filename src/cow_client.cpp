@@ -216,7 +216,6 @@ download_control* cow_client::start_download(const program_info& program)
 
     // Create a new download_control
     download_control* download = new libcow::download_control(torrent, 4, 3000, program.id); // FIXME: no magic numbers please :)
-    download->piece_sources_ =  &piece_sources_;
 
     for (device_it = program.download_devices.begin(); 
         device_it != program.download_devices.end(); ++device_it) 
@@ -349,6 +348,8 @@ void cow_client::alert_thread_function()
             alert_ptr = session_.pop_alert();
             alert = alert_ptr.get();
         }
+
+        //FIXME: use delayed post, not sleep!!!
         libcow::system::sleep(logging_interval_);
 
         //loop

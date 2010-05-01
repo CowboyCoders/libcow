@@ -247,6 +247,7 @@ namespace libcow {
         // this is possible since cow_client is friend
         // with download_control. we don't want to make this public.
         void handle_alert(const libtorrent::alert* event);
+        
         void handle_invoke_after_init(boost::function<void(void)> callback);
 
         void handle_invoke_when_downloaded(const std::vector<int>& pieces, 
@@ -285,9 +286,6 @@ namespace libcow {
         std::multimap<int, piece_request> piece_nr_to_request_;
         // should be accessed through event_disp_ for thread safety
         std::vector<boost::function<void(void)> > startup_complete_callbacks_;
-
-        // should be accessed through download_disp_ for thread safety
-        std::map<int,std::string> * piece_sources_;
         
         // should be accessed through event_disp_ for thread safety
         std::vector<int> piece_origin_;
