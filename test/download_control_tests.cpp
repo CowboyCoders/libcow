@@ -34,6 +34,16 @@ or implied, of CowboyCoders.
 
 #include <cow/cow.hpp>
 
+void invoked_after_init() 
+{
+    std::cout << "Init done!" << std::endl;
+}
+
+void got_wanted_pieces()
+{
+    std::cout << "Got wanted pieces!" << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
     if(argc != 3) {
@@ -47,8 +57,6 @@ int main(int argc, char* argv[])
     BOOST_LOG_TRIVIAL(debug) << "Starting download_control test";
 
     libcow::cow_client client;
-
-    client.start_logger();
 
     client.set_download_directory(dl_path);
     client.set_bittorrent_port(port_num);
@@ -70,6 +78,15 @@ int main(int argc, char* argv[])
     if(!ctrl) {
         return 1;
     }
+
+    ctrl->invoke_after_init(boost::bind(invoked_after_init));
+
+    std::vector<int> must_have;
+    must_have.push_back(1);
+    must_have.push_back(2);
+    must_have.push_back(5);
+
+    ctrl->invoke_when_downloaded(must_have, boost::bind(got_wanted_pieces));
 
     libcow::progress_info pinfo = ctrl->get_progress();
     while(pinfo.state() != libcow::progress_info::downloading && 

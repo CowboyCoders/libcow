@@ -81,10 +81,12 @@ struct check_pointer_value
 };
 
 cow_client::cow_client()
-    : logger_thread_running_(false),
-      max_num_log_messages_(default_max_num_log_messages_),
+    : max_num_log_messages_(default_max_num_log_messages_),
       logging_interval_(default_logging_interval_),
-      download_device_id_(0)
+      download_device_id_(0),
+      alert_disp_(0),
+      alert_thread_running_(true)
+
 {
     //TODO: change this to configurable log levels
 	session_.set_alert_mask(libtorrent::alert::progress_notification |
@@ -95,7 +97,7 @@ cow_client::cow_client()
     settings.allowed_fast_set_size = 1000; // 1000 pieces without choking
     settings.allow_multiple_connections_per_ip = true;
     settings.prioritize_partial_pieces = true; //TODO: might not be good, we'll see!
-    //settings.seeding_piece_quota = 20;
+    settings.seeding_piece_quota = 20;
     settings.strict_end_game_mode = false;
     settings.auto_upload_slots = false;
     session_.set_settings(settings);
@@ -110,16 +112,21 @@ cow_client::cow_client()
     session_.set_local_upload_rate_limit(0);
     session_.set_local_download_rate_limit(0);
 
+    // start alert thread
+    alert_disp_.post(boost::bind(&cow_client::alert_thread_function, this));
+
 }
 
 cow_client::~cow_client()
 {
-    stop_logger();
-    // must destruct download_devices BEFORE the torrent session falls out of scope!
-    {
-        boost::mutex::scoped_lock lock(download_controls_mutex_);
-        download_controls_.clear();
-    }
+    stop_alert_thread();
+    alert_disp_.post(boost::bind(&cow_client::clear_download_controls, this));
+}
+
+// invoked by alert_disp_
+void cow_client::clear_download_controls() 
+{
+    download_controls_.clear();
 }
 
 void cow_client::set_download_directory(const std::string& path)
@@ -136,7 +143,7 @@ libtorrent::torrent_handle cow_client::create_torrent_handle(const properties& p
 {
     libtorrent::add_torrent_params params;
     params.save_path = download_directory_;
-    params.storage_mode = libtorrent::storage_mode_allocate; // allocate Ensure slot consistency. (sux)
+    params.storage_mode = libtorrent::storage_mode_allocate;
 
     properties::const_iterator torrent_it = props.find("torrent");
 
@@ -161,7 +168,7 @@ libtorrent::torrent_handle cow_client::create_torrent_handle(const properties& p
 
     if (magnet_it != props.end()) {
 		try {
-            // Make sure there is no torrent torrent file given
+            // Make sure there is no torrent file given
 			params.ti = 0; 
             // Create a handle from a magnet uri
             return libtorrent::add_magnet_uri(session_, magnet_it->second, params);
@@ -178,15 +185,12 @@ libtorrent::torrent_handle cow_client::create_torrent_handle(const properties& p
 download_control* cow_client::start_download(const program_info& program)
 {
     // begin by checking if this download_control is already active
-    {
-        boost::mutex::scoped_lock lock(download_controls_mutex_);
 
-        download_control_vector::iterator it;
-        for(it = download_controls_.begin(); it != download_controls_.end(); ++it) {
-            download_control* dc = *it;
-            if(dc->id() == program.id) {
-                return dc;
-            }
+    download_control_vector::iterator it;
+    for(it = download_controls_.begin(); it != download_controls_.end(); ++it) {
+        download_control* dc = *it;
+        if(dc->id() == program.id) {
+            return dc;
         }
     }
 
@@ -255,17 +259,27 @@ download_control* cow_client::start_download(const program_info& program)
 
     	}
     }
-    {
-        boost::mutex::scoped_lock lock(download_controls_mutex_);
-        download_controls_.push_back(download);
-    }
+
+    alert_disp_.post(boost::bind(&cow_client::handle_start_download, this, torrent, download));
+ 
     return download;
+}
+
+void cow_client::handle_start_download(libtorrent::torrent_handle torrent,
+                                       download_control* download)
+{
+    download_controls_.push_back(download);
+    download_control_for_torrent[torrent] = download;
 }
 
 void cow_client::remove_download(download_control* download)
 {
+    alert_disp_.post(boost::bind(&cow_client::handle_remove_download, this, download));
+}
+
+void cow_client::handle_remove_download(download_control* download)
+{
     assert(download != 0);
-    boost::mutex::scoped_lock lock(download_controls_mutex_);
         
     download_control_vector::iterator iter = 
         std::find_if(download_controls_.begin(), download_controls_.end(), 
@@ -277,6 +291,14 @@ void cow_client::remove_download(download_control* download)
         // Remove torrent handle
         session_.remove_torrent(download->handle_);
 
+        // remove association with torrent handle
+
+        std::map<libtorrent::torrent_handle, download_control*>::iterator mapped_download =
+            download_control_for_torrent.find(download->handle_);
+        if(mapped_download != download_control_for_torrent.end()) {
+            download_control_for_torrent.erase(mapped_download);
+        }
+
         // Remove from the list of controls and free memory
         download_controls_.erase(iter);
 
@@ -284,47 +306,22 @@ void cow_client::remove_download(download_control* download)
     }
 }
 
-bool cow_client::exit_logger_thread()
+void cow_client::alert_thread_function()
 {
-    boost::mutex::scoped_lock lock(logger_mutex_);
-    return !logger_thread_running_;
-}
-
-download_control* 
-cow_client::torrent_handle_to_download_control(const libtorrent::torrent_handle& handle)
-{
-    boost::mutex::scoped_lock lock(download_controls_mutex_);
-    download_control_vector::iterator it;
-    for(it = download_controls_.begin(); it != download_controls_.end(); ++it)
+    if(alert_thread_running_) 
     {
-        download_control* dc = *it;
-        if(dc->handle_ == handle) {
-            return dc;
-        }
-    }
-    return 0;
-}
-
-void cow_client::logger_thread_function()
-{
-    while(true) 
-    {
-        if(exit_logger_thread()) {
-            break;
-        }
-
         std::auto_ptr<libtorrent::alert> alert_ptr = session_.pop_alert();
         libtorrent::alert* alert = alert_ptr.get();
-        while(alert && !exit_logger_thread()) {
+        while(alert) {
             if(libtorrent::hash_failed_alert* hash_alert = libtorrent::alert_cast<libtorrent::hash_failed_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: hash failed for piece: " << hash_alert->piece_index;
-                download_control* dc = torrent_handle_to_download_control(hash_alert->handle);
+                download_control* dc = download_control_for_torrent[hash_alert->handle];
                 if(dc != 0) {
                     dc->handle_alert(hash_alert);
                 }
             } else if(libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: piece: " << piece_alert->piece_index << " was added by libtorrent"; 
-                download_control* dc = torrent_handle_to_download_control(piece_alert->handle);
+                download_control* dc = download_control_for_torrent[piece_alert->handle];
                 if(dc != 0) {
                     dc->handle_alert(piece_alert);
                 }
@@ -340,7 +337,7 @@ void cow_client::logger_thread_function()
                 {
                     // were done hashing files and are now ready to seed or download.
                     BOOST_LOG_TRIVIAL(debug) << "cow_client: libtorrent is up and running";
-                    download_control* dc = torrent_handle_to_download_control(state_alert->handle);
+                    download_control* dc = download_control_for_torrent[state_alert->handle];
                     if(dc != 0) {
                         dc->handle_alert(state_alert);
                     }
@@ -353,30 +350,21 @@ void cow_client::logger_thread_function()
             alert = alert_ptr.get();
         }
         libcow::system::sleep(logging_interval_);
+
+        //loop
+        alert_disp_.post(boost::bind(&cow_client::alert_thread_function, this));
     }
 }
 
-void cow_client::start_logger()
+void cow_client::stop_alert_thread()
 {
-    {
-        boost::mutex::scoped_lock lock(logger_mutex_);
-        logger_thread_running_ = true;
-    }
-    logger_thread_ptr_.reset(
-        new boost::thread(
-            boost::bind(&cow_client::logger_thread_function, this)));
-
+    alert_disp_.post(boost::bind(&cow_client::handle_stop_alert_thread, this));
 }
 
-void cow_client::stop_logger()
+// invoked by alert_disp_
+void cow_client::handle_stop_alert_thread()
 {
-    {
-        boost::mutex::scoped_lock lock(logger_mutex_);
-        logger_thread_running_ = false;
-    }
-    if(logger_thread_ptr_) {
-        logger_thread_ptr_->join();
-    }
+    alert_thread_running_ = false;
 }
 
 void cow_client::register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 

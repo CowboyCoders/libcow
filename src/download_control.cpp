@@ -55,8 +55,8 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
                                    int id)
     : piece_sources_(0),
       handle_(handle),
-      download_disp_(critical_window_timeout), //TODO: 
-      alert_disp_(0),
+      download_disp_(critical_window_timeout),
+      event_disp_(0),
       critical_window_(critical_window_length),
       is_libtorrent_ready_(false),
       id_(id)
@@ -70,6 +70,8 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
 download_control::~download_control()
 {
     // must destruct download_devices BEFORE the torrent handle falls out of scope!
+
+    // FIXME: is this thread safe?
     download_devices_.clear();
 }
 
@@ -126,6 +128,9 @@ int download_control::piece_length()
 	return ti.piece_length();
 }
 
+/* NOTE: this function is safe to call from different threads
+ * since it only calls libtorrent and the event dispatcher 
+ */
 void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
     if(!handle_.is_seed()) {
@@ -148,7 +153,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
                 continue;
             }
             
-            download_disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+            event_disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
 
             BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
                                      << iter->index;
@@ -164,7 +169,7 @@ void download_control::add_download_device(download_device* dd)
     download_devices_.push_back(dd_ptr);
 }
 
-std::vector<int> download_control::has_pieces(const std::vector<int>& pieces)
+std::vector<int> download_control::missing_pieces(const std::vector<int>& pieces)
 {
     libtorrent::torrent_status status = handle_.status();
     std::vector<int> missing;
@@ -467,63 +472,68 @@ void download_control::fetch_missing_pieces(download_device* dev,
     }
 }
 
-void download_control::wait_for_startup(boost::function<void(void)> callback)
+void download_control::invoke_after_init(boost::function<void(void)> callback)
 {
-    bool ready;
-    {
-        boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-        ready = is_libtorrent_ready_;
-    }
-    if(ready) {
+    event_disp_.post(
+        boost::bind(&download_control::handle_invoke_after_init, 
+                    this, 
+                    callback));
+}
+
+// invoked by event_disp_
+void download_control::handle_invoke_after_init(boost::function<void(void)> callback)
+{
+    if(is_libtorrent_ready_) {
         callback();
     } else {
-        boost::mutex::scoped_lock lock(startup_callback_mutex_);
-        
         startup_complete_callbacks_.push_back(callback);
     }
 }
-        
-void download_control::wait_for_pieces(const std::vector<int>& pieces, boost::function<void(std::vector<int>)> callback)
-{
-    bool ready;
-    {
-        boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-        ready = is_libtorrent_ready_;
-    }
-    if(ready) {
-        std::vector<int> missing = has_pieces(pieces);
-        if(missing.size() != 0) {
-            std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());
-            std::vector<int>* org_pieces = new std::vector<int>(pieces);
-            
-            piece_request req(piece_list,callback,org_pieces);
-            std::vector<libcow::piece_request> reqs;
-            
-            std::vector<int>::iterator it;
-            
-            for(it = missing.begin(); it != missing.end(); ++it) {
-                int piece_id = *it;
-                {
-                    boost::mutex::scoped_lock lock(map_mutex_);
-                    piece_nr_to_request_.insert(std::pair<int,piece_request>(piece_id,req));
-                }
-                reqs.push_back(libcow::piece_request(piece_length(),piece_id,1));
-            }
 
-            pre_buffer(reqs);
-        } else {
-            callback(pieces);
-        }
-    } else {
-        wait_for_startup(boost::bind(&download_control::wait_for_pieces,this,pieces,callback));
-    }
+void download_control::invoke_when_downloaded(const std::vector<int>& pieces, 
+                                              boost::function<void(std::vector<int>)> callback)
+{
+    invoke_after_init(
+        boost::bind(&download_control::handle_invoke_when_downloaded,
+                    this,
+                    pieces,
+                    callback));
 
 }
 
+// invoked by event_disp_
+void download_control::handle_invoke_when_downloaded(const std::vector<int>& pieces, 
+                                                     boost::function<void(std::vector<int>)> callback)
+{
+    std::vector<int> missing = missing_pieces(pieces);
+    if(missing.size() != 0) {
+        std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());
+        std::vector<int>* org_pieces = new std::vector<int>(pieces);
+        
+        piece_request req(piece_list,callback,org_pieces);
+        std::vector<libcow::piece_request> reqs;
+        
+        std::vector<int>::iterator it;
+        
+        for(it = missing.begin(); it != missing.end(); ++it) {
+            int piece_id = *it;
+            {
+                piece_nr_to_request_.insert(std::pair<int,piece_request>(piece_id,req));
+            }
+            reqs.push_back(libcow::piece_request(piece_length(),piece_id,1));
+        }
+
+        // ugly side effect to call pre_buffer here, plus, it's not thread safe
+        //pre_buffer(reqs);
+    } else {
+        callback(pieces);
+    }
+}
+
+// invoked by event_disp_
+// resources: piece_nr_to_request_
 void download_control::update_piece_requests(int piece_id)
 {
-    boost::mutex::scoped_lock lock(map_mutex_);
-
     std::pair<std::multimap<int,piece_request>::iterator,
               std::multimap<int,piece_request>::iterator> bounds;
     bounds = piece_nr_to_request_.equal_range(piece_id);
@@ -546,30 +556,33 @@ void download_control::update_piece_requests(int piece_id)
     }
 }
 
+// invoked by event_disp_
+// resources startup_complete_callbacks_
 void download_control::signal_startup_callbacks()
 {
     std::vector<boost::function<void()> >::iterator it;
-    {
-        boost::mutex::scoped_lock lock(startup_callback_mutex_);
-        
-        for(it = startup_complete_callbacks_.begin(); it != startup_complete_callbacks_.end(); ++it) {
-            (*it)();
-        }
-        startup_complete_callbacks_.clear();
+
+    for(it = startup_complete_callbacks_.begin(); it != startup_complete_callbacks_.end(); ++it) {
+        (*it)();
     }
+    startup_complete_callbacks_.clear();
 }
 
+// called from alert handler thread
+//FIXME: add mutex for is_libtorrent_ready
 void download_control::handle_alert(const libtorrent::alert* event)
 {
     if(libtorrent::alert_cast<libtorrent::state_changed_alert>(event)) {
-        // this means that the startup is done (checked inside cow_client)
-        {
-            boost::mutex::scoped_lock lock(libtorrent_ready_mutex_);
-            is_libtorrent_ready_ = true;
-        }
-        alert_disp_.post<boost::function<void()> >(boost::bind(&download_control::signal_startup_callbacks,this));
+        event_disp_.post(boost::bind(&download_control::set_libtorrent_ready, this));
+        event_disp_.post<boost::function<void()> >(boost::bind(&download_control::signal_startup_callbacks,this));
     } else if(const libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
         int piece_id = piece_alert->piece_index;
-        alert_disp_.post<boost::function<void()> >(boost::bind(&download_control::update_piece_requests,this,piece_id));
+        event_disp_.post<boost::function<void()> >(boost::bind(&download_control::update_piece_requests,this,piece_id));
     }
+}
+
+// invoked by event_disp_
+void download_control::set_libtorrent_ready()
+{
+    is_libtorrent_ready_ = true;
 }

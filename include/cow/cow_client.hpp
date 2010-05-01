@@ -36,6 +36,7 @@ or implied, of CowboyCoders.
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include "cow/download_device_manager.hpp"
+#include "cow/dispatcher.hpp"
 
 namespace libcow {    
 
@@ -96,16 +97,6 @@ namespace libcow {
         void remove_download(download_control* download);
 
        /**
-        * This function starts the logger for this class in a new thread.
-        */
-		void start_logger();
-
-       /**
-        * This function stops the logger for this class.
-        */
-		void stop_logger();
-
-       /**
         * This function registers a new download_device_factory which can be used
         * for creating new download_devices.
         * @param factory A boost::shared_ptr to the factory to register.
@@ -116,22 +107,28 @@ namespace libcow {
 
     private:
         libtorrent::torrent_handle create_torrent_handle(const properties& props);
-        download_control* torrent_handle_to_download_control(const libtorrent::torrent_handle& handle); 
-        void logger_thread_function();
-        bool exit_logger_thread();
+        void alert_thread_function();
+        void stop_alert_thread();
+        void handle_stop_alert_thread();
+        void handle_start_download(libtorrent::torrent_handle torrent, download_control* download);
+        void handle_remove_download(download_control* download);
 
         typedef std::vector<download_control*> download_control_vector;
+        // should only be accessed via alert_disp_
         download_control_vector download_controls_;
 
-        boost::mutex download_controls_mutex_;
-        
+        void clear_download_controls();
+
         download_device_manager dd_manager_;
         libtorrent::session session_;
         std::string download_directory_;             
-    
-		boost::shared_ptr<boost::thread> logger_thread_ptr_;
-        bool logger_thread_running_;
-        boost::mutex logger_mutex_;
+            
+        dispatcher alert_disp_;
+        // should only be accessed via alert_disp_
+        bool alert_thread_running_;
+        // should only be accessed via alert_disp_
+        std::map<libtorrent::torrent_handle, download_control*>
+            download_control_for_torrent;
 
         size_t max_num_log_messages_;
         int logging_interval_;
