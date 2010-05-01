@@ -32,6 +32,7 @@ or implied, of CowboyCoders.
 #include "cow/utils/buffer.hpp"
 #include "cow/dispatcher.hpp"
 #include "cow/download_control_event_handler.hpp"
+#include "cow/download_control_worker.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
@@ -80,7 +81,10 @@ namespace libcow {
         * are downloaded by requesting them from a random access download device.
         * @param requests A vector of requests to download.
         */
-        void pre_buffer(const std::vector<libcow::piece_request> requests);
+        void pre_buffer(const std::vector<libcow::piece_request>& requests)
+        {
+            worker_->pre_buffer(requests);
+        }
 
         /**
         * This function returns the total file size of the downloaded data.
@@ -138,7 +142,9 @@ namespace libcow {
          * @param offset The byte offset of the current playback position.
          * @param force_request Allow possibly redundant requests.
          */
-        void set_playback_position(size_t offset, bool force_request = false);
+        void set_playback_position(size_t offset, bool force_request = false) {
+            worker_->set_playback_position(offset, force_request);
+        }
 
        /**
         * Returns the length of a piece.
@@ -188,19 +194,14 @@ namespace libcow {
         }
 
         /**
-         * HENRY, document this!
-         */
-        int critical_window()
-        {
-            return critical_window_;
-        }
-
-        /**
-         * HENRY, document this!
+         * Sets the number of consecutive pieces, starting with the piece at the
+         * current playback position, that should be prioritized for downloading.
+         *
+         * @param num_pieces The length, int pieces, of the critical window
          */
         void set_critical_window(int num_pieces)
         {
-            critical_window_ = num_pieces;
+            worker_->set_critical_window(num_pieces);
         }
         
         /**
@@ -221,12 +222,7 @@ namespace libcow {
 
     private:
         download_control_event_handler* event_handler_;
-
-        void fetch_missing_pieces(download_device* dev, 
-                                  int first_piece, 
-                                  int last_piece,
-                                  bool force_request,
-                                  boost::system::error_code& error);
+        download_control_worker* worker_;
 
         // used by cow_client when a new libtorrent::alert arrives.
         // this is possible since cow_client is friend
@@ -241,14 +237,7 @@ namespace libcow {
 
         libtorrent::torrent_handle handle_;
 
-        std::vector<boost::shared_ptr<download_device> > download_devices_;
-
         std::ifstream file_handle_;
-
-        dispatcher download_disp_;
-
-        int critical_window_;
-        std::vector<bool> critically_requested_;
 
         int id_;
 

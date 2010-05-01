@@ -52,25 +52,19 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
                                    int critical_window_timeout,
                                    int id)
     : handle_(handle),
-      download_disp_(critical_window_timeout),
-      critical_window_(critical_window_length),
       id_(id)
 
 {
     srand (time(NULL));
-    critically_requested_ = std::vector<bool>(handle_.get_torrent_info().num_pieces(), false);
 
     event_handler_ = new download_control_event_handler(handle_);
+    worker_ = new download_control_worker(handle_, critical_window_length, critical_window_timeout);
 }
 
 download_control::~download_control()
 {
     delete event_handler_;
-
-    // must destruct download_devices BEFORE the torrent handle falls out of scope!
-
-    // FIXME: is this thread safe?
-    download_devices_.clear();
+    delete worker_;
 }
 
 int download_control::piece_length()
@@ -116,9 +110,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 
 void download_control::add_download_device(download_device* dd)
 {
-    boost::shared_ptr<download_device> dd_ptr;
-    dd_ptr.reset(dd);
-    download_devices_.push_back(dd_ptr);
+    worker_->add_download_device(dd);
 }
 
 bool download_control::has_data(size_t offset, size_t length)
@@ -230,28 +222,6 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     return static_cast<size_t>(file_handle_.gcount());
 }
 
-void download_control::pre_buffer(const std::vector<libcow::piece_request> requests)
-{
-    std::vector<boost::shared_ptr<download_device> >::iterator it;
-
-    download_device* random_access_device = 0;
-
-    for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
-        download_device* current = it->get();
-        if(current != 0 && current->is_random_access()) {
-            random_access_device = current;
-            break;
-        }
-    }
-
-    if(random_access_device) 
-    {
-        random_access_device->get_pieces(requests);
-    } else {
-        BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
-    }
-}
-
 size_t download_control::file_size() const
 {
     const libtorrent::file_entry& file_entry = handle_.get_torrent_info().files().at(0);
@@ -297,97 +267,4 @@ void download_control::debug_print()
 			  << " | seeds: " << status.list_seeds
 		 	  << " | peers: " << status.list_peers << std::endl;
 
-}
-
-void download_control::set_playback_position(size_t offset, bool force_request)
-{
-    // don't fiddle with download strategies if seeding
-    if(handle_.status().state == libtorrent::torrent_status::seeding) {
-        return;
-    }
-
-    assert(offset >= 0);
-
-    // create a vector of pieces to prioritize
-    int first_piece_to_prioritize = offset / piece_length();
-
-    //std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
-
-    // set low priority for pieces before playback position
-    for(int i = 0; i < first_piece_to_prioritize; ++i) {
-        handle_.piece_priority(i, 1);
-    }
-
-    // set high priority for pieces in critical window
-    for(int i = 0; i < critical_window(); ++i) {
-        int idx = first_piece_to_prioritize + i;
-        if(idx >= handle_.get_torrent_info().num_pieces()) break;
-        handle_.piece_priority(idx, 7);
-    }
-
-    // get an up to date list of random access devices
-    std::vector<download_device*> random_access_devices;
-
-    std::vector<boost::shared_ptr<download_device> >::iterator it;
-
-    for(it = download_devices_.begin(); it != download_devices_.end(); ++it)
-    {
-        download_device* dev = it->get();
-        if(dev && dev->is_random_access()) {
-            random_access_devices.push_back(dev);
-        }
-    }
-    
-    if(random_access_devices.size() > 0) {
-        // load balancing
-        int device_index = rand() % random_access_devices.size();
-
-        download_device* dev = random_access_devices[device_index];
-        download_disp_.post_delayed(
-            boost::bind(&download_control::fetch_missing_pieces, this, 
-                        dev, 
-                        first_piece_to_prioritize, 
-                        first_piece_to_prioritize + critical_window() - 1,
-                        force_request,
-                        _1));
-    }
-}
-
-void download_control::fetch_missing_pieces(download_device* dev, 
-                                            int first_piece, 
-                                            int last_piece,
-                                            bool force_request,
-                                            boost::system::error_code& error)
-{
-    assert(last_piece >= first_piece);
-    
-    libtorrent::torrent_status status = handle_.status();
-    libtorrent::bitfield pieces = status.pieces;
-
-    assert(last_piece < pieces.size());
-
-    std::vector<libcow::piece_request> reqs;
-
-    for(int i = first_piece; i <= last_piece; ++i) {
-        // don't request non-existing pieces
-        if(i >= num_pieces()) {
-            break;
-        }
-        /* Request only pieces that we don't already have or 
-         * haven't alread requested. Always request already 
-         * requested pieces if force_request is set to true 
-         * (but never request pieces that we already have).
-         */
-        if(!pieces[i] && (force_request || !critically_requested_[i])) {
-            reqs.push_back(libcow::piece_request(piece_length(), i, 1));
-            critically_requested_[i] = true;
-            BOOST_LOG_TRIVIAL(debug) 
-                << "Falling back to random access download devices for piece " << i
-                << (force_request ? " (forced request)" : "");
-        }
-    }
-
-    if(reqs.size() > 0) {
-        dev->get_pieces(reqs);
-    }
 }

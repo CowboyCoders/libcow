@@ -120,8 +120,6 @@ int main(int argc, char* argv[])
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 
-    std::cout << "critial window: " << ctrl->critical_window() << std::endl;
-
     for(size_t i = 0; i < 4; ++i) {
  
         ctrl->debug_print();

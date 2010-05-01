@@ -41,7 +41,7 @@ namespace libcow
                                            boost::function<void(std::vector<int>)> callback);
         void signal_startup_callbacks();
         void set_libtorrent_ready();
-        void download_control_event_handler::update_piece_requests(int piece_id);
+        void update_piece_requests(int piece_id);
         std::vector<int> missing_pieces(const std::vector<int>& pieces);
 
         dispatcher disp_;
