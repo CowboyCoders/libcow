@@ -84,7 +84,6 @@ cow_client::cow_client()
     : max_num_log_messages_(default_max_num_log_messages_),
       logging_interval_(default_logging_interval_),
       download_device_id_(0),
-      alert_disp_(0),
       alert_thread_running_(true)
 
 {
@@ -113,14 +112,18 @@ cow_client::cow_client()
     session_.set_local_download_rate_limit(0);
 
     // start alert thread
-    alert_disp_.post(boost::bind(&cow_client::alert_thread_function, this));
+    alert_disp_ = new dispatcher(0);
+    alert_disp_->post(boost::bind(&cow_client::alert_thread_function, this));
 
 }
 
 cow_client::~cow_client()
 {
+    alert_disp_->post(boost::bind(&cow_client::clear_download_controls, this));
+
     stop_alert_thread();
-    alert_disp_.post(boost::bind(&cow_client::clear_download_controls, this));
+    
+    delete alert_disp_;
 }
 
 // invoked by alert_disp_
@@ -259,7 +262,7 @@ download_control* cow_client::start_download(const program_info& program)
     	}
     }
 
-    alert_disp_.post(boost::bind(&cow_client::handle_start_download, this, torrent, download));
+    alert_disp_->post(boost::bind(&cow_client::handle_start_download, this, torrent, download));
  
     return download;
 }
@@ -273,7 +276,7 @@ void cow_client::handle_start_download(libtorrent::torrent_handle torrent,
 
 void cow_client::remove_download(download_control* download)
 {
-    alert_disp_.post(boost::bind(&cow_client::handle_remove_download, this, download));
+    alert_disp_->post(boost::bind(&cow_client::handle_remove_download, this, download));
 }
 
 void cow_client::handle_remove_download(download_control* download)
@@ -353,13 +356,13 @@ void cow_client::alert_thread_function()
         libcow::system::sleep(logging_interval_);
 
         //loop
-        alert_disp_.post(boost::bind(&cow_client::alert_thread_function, this));
+        alert_disp_->post(boost::bind(&cow_client::alert_thread_function, this));
     }
 }
 
 void cow_client::stop_alert_thread()
 {
-    alert_disp_.post(boost::bind(&cow_client::handle_stop_alert_thread, this));
+    alert_disp_->post(boost::bind(&cow_client::handle_stop_alert_thread, this));
 }
 
 // invoked by alert_disp_

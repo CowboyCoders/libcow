@@ -31,6 +31,7 @@ or implied, of CowboyCoders.
 
 #include "cow/utils/buffer.hpp"
 #include "cow/dispatcher.hpp"
+#include "cow/download_control_event_handler.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
@@ -65,13 +66,6 @@ namespace libcow {
                          int id);
         ~download_control();
 
-       /**
-        * Creates a new progress_info struct which contains information about
-        * the current download progress.
-        * @return A progress_info struct with information.
-        */
-        progress_info get_progress();
-
         /**
          * @return The number of pieces in the torrent associated with this
          * download_control.
@@ -80,15 +74,6 @@ namespace libcow {
         {
             return handle_.get_torrent_info().num_pieces();
         }
-
-       /**
-        * This function will try to make sure that the byte range
-        * is downloaded by requesting it from a random access download device.
-        * WARNING: This method is not yet implemented.
-        * @param offset The offset to start requesting from.
-        * @param length Number of bytes from offset to request.
-        */
-        void pre_buffer(size_t offset, size_t length);
 
        /**
         * This function will try to make sure that the requested pieces
@@ -126,15 +111,6 @@ namespace libcow {
         * @return True if the data has been downloaded, otherwise false.
         */
         bool has_data(size_t offset, size_t length);
-
-        /**
-         * This function checks wether the supplied pieces are downloaded 
-         * and returns a vector of the pieces which aren't.
-         *
-         * @param pieces The pieces for which the availability should be checked for
-         * @return a vector that contatins the pieces which aren't downloaded 
-         */
-        std::vector<int> missing_pieces(const std::vector<int>& pieces);
         
         /**
          * The number of sequential bytes available from 
@@ -193,7 +169,11 @@ namespace libcow {
          * @param callback The function to call when all the pieces are downloaded
          * @param pieces A vector describing which pieces should be downloaded
          */
-        void invoke_when_downloaded(const std::vector<int>& pieces, boost::function<void(std::vector<int>)> callback);
+        void invoke_when_downloaded(const std::vector<int>& pieces, 
+                                    boost::function<void(std::vector<int>)> callback)
+        {
+            event_handler_->invoke_when_downloaded(pieces, callback);
+        }
         
         /**
          * The supplied boost::function callback will be called when the download_control is intitialized and ready.
@@ -202,7 +182,10 @@ namespace libcow {
          *
          * @param callback The function to call when all the pieces are downloaded
          */
-        void invoke_after_init(boost::function<void(void)> callback);
+        void invoke_after_init(boost::function<void(void)> callback) 
+        {
+            event_handler_->invoke_after_init(callback);
+        }
 
         /**
          * HENRY, document this!
@@ -237,58 +220,24 @@ namespace libcow {
         }
 
     private:
+        download_control_event_handler* event_handler_;
+
         void fetch_missing_pieces(download_device* dev, 
                                   int first_piece, 
                                   int last_piece,
                                   bool force_request,
                                   boost::system::error_code& error);
-        
+
         // used by cow_client when a new libtorrent::alert arrives.
         // this is possible since cow_client is friend
         // with download_control. we don't want to make this public.
-        void handle_alert(const libtorrent::alert* event);
-        
-        void handle_invoke_after_init(boost::function<void(void)> callback);
-
-        void handle_invoke_when_downloaded(const std::vector<int>& pieces, 
-                                           boost::function<void(std::vector<int>)> callback);
-
-        void set_libtorrent_ready();
-
-        // should only be invoked by event_disp_
-        void set_piece_src(int source, size_t piece_index) {
-            if(piece_index < piece_origin_.size() &&
-                piece_origin_[piece_index] == 0)
-            {
-                piece_origin_[piece_index] = source;
-            }
+        void handle_alert(const libtorrent::alert* alert) {
+            event_handler_->handle_alert(alert);
         }
 
-        void update_piece_requests(int piece_id);
-        void signal_startup_callbacks();
-        
-        class piece_request
-        {
-        public:
-            typedef boost::function<void(std::vector<int>)> callback;
-            
-            piece_request(std::list<int>* pieces, callback func, std::vector<int>* org_pieces)
-                : pieces_(pieces),
-                  callback_(func),
-                  org_pieces_(org_pieces) {} // empty
-            
-            std::list<int>* pieces_;
-            callback callback_;
-            std::vector<int>* org_pieces_;
-        };
-
-        // should be accessed through event_disp_ for thread safety
-        std::multimap<int, piece_request> piece_nr_to_request_;
-        // should be accessed through event_disp_ for thread safety
-        std::vector<boost::function<void(void)> > startup_complete_callbacks_;
-        
-        // should be accessed through event_disp_ for thread safety
-        std::vector<int> piece_origin_;
+        void set_piece_src(int source, size_t piece_index) {
+            event_handler_->set_piece_src(source, piece_index);
+        }
 
         libtorrent::torrent_handle handle_;
 
@@ -296,20 +245,14 @@ namespace libcow {
 
         std::ifstream file_handle_;
 
-        dispatcher event_disp_;
         dispatcher download_disp_;
 
         int critical_window_;
         std::vector<bool> critically_requested_;
-        
-        // should be accessed through event_disp_ for thread safety
-        bool is_libtorrent_ready_;
 
-        int id_; 
+        int id_;
 
-        // cow_client should have access to the torrent_handle
-        friend class libcow::cow_client;
-
+        friend class cow_client;
     };
 }
 

@@ -123,7 +123,7 @@ namespace libcow {
         libtorrent::session session_;
         std::string download_directory_;             
             
-        dispatcher alert_disp_;
+        dispatcher* alert_disp_;
         // should only be accessed via alert_disp_
         bool alert_thread_running_;
         // should only be accessed via alert_disp_

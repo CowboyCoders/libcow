@@ -88,18 +88,6 @@ int main(int argc, char* argv[])
 
     ctrl->invoke_when_downloaded(must_have, boost::bind(got_wanted_pieces));
 
-    libcow::progress_info pinfo = ctrl->get_progress();
-    while(pinfo.state() != libcow::progress_info::downloading && 
-          pinfo.state() != libcow::progress_info::seeding     && 
-          pinfo.state() != libcow::progress_info::finished)
-    {
-        std::cout << "waiting for libtorrent: "
-                  << pinfo.state_str() << std::endl;
-        libcow::system::sleep(1000);
-        pinfo = ctrl->get_progress();
-    }
-
-
     std::cout << "testing blocking read...." << std::endl;
 
     std::vector<libcow::piece_request> reqs1;
@@ -131,24 +119,13 @@ int main(int argc, char* argv[])
     std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
-    
-    for(int i = 0; i < 2; ++i) {
-        libcow::progress_info progress_info = ctrl->get_progress();
-        std::cout << "State: " << progress_info.state_str() 
-            << ", Progress: " << (progress_info.progress() * 100.0) 
-            << "%" << std::endl;
-        libcow::system::sleep(1000);
-    }
 
     std::cout << "critial window: " << ctrl->critical_window() << std::endl;
 
-    for(size_t i = 0; i < 1000000; ++i) {
+    for(size_t i = 0; i < 4; ++i) {
+ 
         ctrl->debug_print();
-        libcow::progress_info progress_info = ctrl->get_progress();
-        std::cout << "State: " << progress_info.state_str() 
-            << ", Progress: " << (progress_info.progress() * 100.0) 
-            << "%" << std::endl;
-        
+
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;
         ctrl->set_playback_position(playback_pos);

@@ -38,8 +38,6 @@ either expressed or implied, of CowboyCoders.
 
 #include <boost/log/trivial.hpp>
 #include <libtorrent/peer_info.hpp>
-#include <libtorrent/alert_types.hpp>
-#include <libtorrent/alert.hpp>
 
 #include <iostream>
 #include <time.h>
@@ -55,70 +53,24 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
                                    int id)
     : handle_(handle),
       download_disp_(critical_window_timeout),
-      event_disp_(0),
       critical_window_(critical_window_length),
-      is_libtorrent_ready_(false),
       id_(id)
 
 {
     srand (time(NULL));
-    piece_origin_ = std::vector<int>(handle_.get_torrent_info().num_pieces(),0);
     critically_requested_ = std::vector<bool>(handle_.get_torrent_info().num_pieces(), false);
+
+    event_handler_ = new download_control_event_handler(handle_);
 }
 
 download_control::~download_control()
 {
+    delete event_handler_;
+
     // must destruct download_devices BEFORE the torrent handle falls out of scope!
 
     // FIXME: is this thread safe?
     download_devices_.clear();
-}
-
-progress_info download_control::get_progress()
-{
-    libtorrent::torrent_status status = handle_.status();
-
-    if(status.state == libtorrent::torrent_status::downloading) 
-    {
-        return progress_info(progress_info::downloading, status.progress, status.pieces, piece_origin_);
-    }
-    // return an all-true bitfield if we're seeding
-    else if(status.state == libtorrent::torrent_status::seeding) 
-    {
-        libtorrent::bitfield all_true(num_pieces(), true);
-        return progress_info(progress_info::seeding, status.progress, all_true, piece_origin_);
-    }
-    // return an all-false bitfield in all other cases
-    else
-    {
-        progress_info::torrent_state state;
-        switch(status.state)
-        {
-        case libtorrent::torrent_status::allocating: 
-            state = progress_info::allocating; 
-            break;
-        case libtorrent::torrent_status::checking_files: 
-            state = progress_info::checking_files; 
-            break;
-        case libtorrent::torrent_status::checking_resume_data: 
-            state = progress_info::checking_resume_data; 
-            break;
-        case libtorrent::torrent_status::downloading_metadata: 
-            state = progress_info::downloading_metadata; 
-            break;
-        case libtorrent::torrent_status::finished:
-            state = progress_info::finished; 
-            break;
-        case libtorrent::torrent_status::queued_for_checking:
-            state = progress_info::queued_for_checking; 
-            break;
-        default:
-            state = progress_info::unknown;
-        }
-    	
-        libtorrent::bitfield all_false(num_pieces(), false);
-        return progress_info(state, status.progress, all_false, piece_origin_);
-    }
 }
 
 int download_control::piece_length()
@@ -153,7 +105,7 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
                 continue;
             }
             
-            event_disp_.post(boost::bind(&download_control::set_piece_src, this, id, iter->index));
+            set_piece_src(id, iter->index);
 
             BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
                                      << iter->index;
@@ -169,31 +121,6 @@ void download_control::add_download_device(download_device* dd)
     download_devices_.push_back(dd_ptr);
 }
 
-std::vector<int> download_control::missing_pieces(const std::vector<int>& pieces)
-{
-    libtorrent::torrent_status status = handle_.status();
-    std::vector<int> missing;
-    
-    if(status.state == libtorrent::torrent_status::seeding) {
-        return missing;
-    }
-	else if (status.state == libtorrent::torrent_status::downloading ||
-             status.state == libtorrent::torrent_status::finished)
-    {
-	    const libtorrent::bitfield& piece_status = status.pieces;
-        std::vector<int>::const_iterator it;
-		for (it = pieces.begin(); it != pieces.end(); ++it) {
-			int piece_idx = *it;
-            if (!piece_status[piece_idx]) {
-				missing.push_back(piece_idx);
-			}
-		}
-        return missing;
-	} else {
-        return pieces;
-    }
-}
-
 bool download_control::has_data(size_t offset, size_t length)
 {
     assert(length > 0);
@@ -207,7 +134,6 @@ bool download_control::has_data(size_t offset, size_t length)
     if ((int)piece_end >= info.num_pieces() || (int)piece_start >= info.num_pieces()){
         throw std::out_of_range("has_data: piece index out of range");
 	}
-
 
     libtorrent::torrent_status status = handle_.status();
     
@@ -304,11 +230,6 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     return static_cast<size_t>(file_handle_.gcount());
 }
 
-void download_control::pre_buffer(size_t offset, size_t length)
-{
-
-}
-
 void download_control::pre_buffer(const std::vector<libcow::piece_request> requests)
 {
     std::vector<boost::shared_ptr<download_device> >::iterator it;
@@ -339,8 +260,7 @@ size_t download_control::file_size() const
 
 void download_control::debug_print()
 {
-    progress_info info = get_progress();
-    libtorrent::bitfield progress = info.downloaded();
+    libtorrent::bitfield progress = handle_.status().pieces;
 
     std::cout << "num_pieces: " << num_pieces() << std::endl;
     std::cout << "progress.size: " << progress.size() << std::endl;
@@ -470,119 +390,4 @@ void download_control::fetch_missing_pieces(download_device* dev,
     if(reqs.size() > 0) {
         dev->get_pieces(reqs);
     }
-}
-
-void download_control::invoke_after_init(boost::function<void(void)> callback)
-{
-    event_disp_.post(
-        boost::bind(&download_control::handle_invoke_after_init, 
-                    this, 
-                    callback));
-}
-
-// invoked by event_disp_
-void download_control::handle_invoke_after_init(boost::function<void(void)> callback)
-{
-    if(is_libtorrent_ready_) {
-        callback();
-    } else {
-        startup_complete_callbacks_.push_back(callback);
-    }
-}
-
-void download_control::invoke_when_downloaded(const std::vector<int>& pieces, 
-                                              boost::function<void(std::vector<int>)> callback)
-{
-    invoke_after_init(
-        boost::bind(&download_control::handle_invoke_when_downloaded,
-                    this,
-                    pieces,
-                    callback));
-
-}
-
-// invoked by event_disp_
-void download_control::handle_invoke_when_downloaded(const std::vector<int>& pieces, 
-                                                     boost::function<void(std::vector<int>)> callback)
-{
-    std::vector<int> missing = missing_pieces(pieces);
-    if(missing.size() != 0) {
-        std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());
-        std::vector<int>* org_pieces = new std::vector<int>(pieces);
-        
-        piece_request req(piece_list,callback,org_pieces);
-        std::vector<libcow::piece_request> reqs;
-        
-        std::vector<int>::iterator it;
-        
-        for(it = missing.begin(); it != missing.end(); ++it) {
-            int piece_id = *it;
-            {
-                piece_nr_to_request_.insert(std::pair<int,piece_request>(piece_id,req));
-            }
-            reqs.push_back(libcow::piece_request(piece_length(),piece_id,1));
-        }
-
-        // ugly side effect to call pre_buffer here, plus, it's not thread safe
-        //pre_buffer(reqs);
-    } else {
-        callback(pieces);
-    }
-}
-
-// invoked by event_disp_
-void download_control::update_piece_requests(int piece_id)
-{
-    std::pair<std::multimap<int,piece_request>::iterator,
-              std::multimap<int,piece_request>::iterator> bounds;
-    bounds = piece_nr_to_request_.equal_range(piece_id);
-    std::multimap<int,piece_request>::iterator it;
-    
-    for(it = bounds.first; it != bounds.second; ++it) {
-        piece_request req = (*it).second;
-        std::list<int>* pieces = req.pieces_;
-        pieces->remove(piece_id);
-        if(pieces->size() == 0) {
-            std::vector<int> org_pieces = *(req.org_pieces_);
-            piece_request::callback func = req.callback_;
-            delete pieces;
-            delete req.org_pieces_;
-            func(org_pieces);
-        } 
-    }
-    if(piece_nr_to_request_.find(piece_id) != piece_nr_to_request_.end()) {
-        piece_nr_to_request_.erase(piece_id);
-    }
-}
-
-// invoked by event_disp_
-void download_control::signal_startup_callbacks()
-{
-    std::vector<boost::function<void()> >::iterator it;
-
-    for(it = startup_complete_callbacks_.begin(); it != startup_complete_callbacks_.end(); ++it) {
-        (*it)();
-    }
-    startup_complete_callbacks_.clear();
-}
-
-// called by the cow_client alert handler thread
-void download_control::handle_alert(const libtorrent::alert* event)
-{
-    if(libtorrent::alert_cast<libtorrent::state_changed_alert>(event)) {
-        event_disp_.post(
-            boost::bind(&download_control::set_libtorrent_ready, this));
-        event_disp_.post<boost::function<void()> >(
-            boost::bind(&download_control::signal_startup_callbacks,this));
-    } else if(const libtorrent::piece_finished_alert* piece_alert = 
-                libtorrent::alert_cast<libtorrent::piece_finished_alert>(event)) {
-        int piece_id = piece_alert->piece_index;
-        event_disp_.post<boost::function<void()> >(boost::bind(&download_control::update_piece_requests,this,piece_id));
-    }
-}
-
-// invoked by event_disp_
-void download_control::set_libtorrent_ready()
-{
-    is_libtorrent_ready_ = true;
 }
