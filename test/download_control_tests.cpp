@@ -31,12 +31,17 @@ or implied, of CowboyCoders.
 #include <boost/log/trivial.hpp>
 #include <boost/shared_ptr.hpp>
 #include <libtorrent/session.hpp>
-
+#include <boost/thread.hpp>
 #include <cow/cow.hpp>
+
+boost::mutex mutex;
+boost::condition_variable cond;
 
 void invoked_after_init() 
 {
+    
     std::cout << "Init done!" << std::endl;
+    cond.notify_one();
 }
 
 void got_wanted_pieces()
@@ -70,16 +75,25 @@ int main(int argc, char* argv[])
         "multicast");
 
     libcow::program_table prog_table;
-    prog_table.load_from_http("cowboycoders.se/program_table.xml",120);
+    prog_table.load_from_http("tau.hopto.org/program_table.xml",120);
+
+    if(prog_table.size() == 0) {
+        std::cout << "Couldn't fetch program table!" << std::endl;
+        return 1;
+    }
 
     std::cout << "starting download" << std::endl;
-    libcow::download_control* ctrl = client.start_download(prog_table.at(0));
+    libcow::download_control* ctrl = client.start_download(prog_table.at(2));
 
     if(!ctrl) {
+        std::cout << "start_download returned null" << std::endl;
         return 1;
     }
 
     ctrl->invoke_after_init(boost::bind(invoked_after_init));
+
+    boost::unique_lock<boost::mutex> lock(mutex);
+    cond.wait(lock);
 
     std::vector<int> must_have;
     must_have.push_back(1);
@@ -114,15 +128,15 @@ int main(int argc, char* argv[])
     libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
 
     //FIXME: this test depends on file being big_buck_bunny.mpg
-    std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
-    std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
-    std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    //std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
+    //std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    //std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 
-    for(size_t i = 0; i < 400; ++i) {
+    for(size_t i = 0; i < 10; ++i) {
  
-        //ctrl->debug_print();
+        ctrl->debug_print();
 
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;
@@ -130,16 +144,42 @@ int main(int argc, char* argv[])
         libcow::system::sleep(250);
         playback_pos += 64;
         ctrl->set_playback_position(playback_pos);
-        libcow::system::sleep(250);
+        libcow::system::sleep(150);
         playback_pos += 64;
         ctrl->set_playback_position(playback_pos);
-        libcow::system::sleep(250);
+        libcow::system::sleep(50);
         playback_pos += 64;
         ctrl->set_playback_position(playback_pos);
-        libcow::system::sleep(250);
+        libcow::system::sleep(10);
     }
 
-    //client.remove_download(ctrl);
+    // make sure that this stupid move just gives us a pointer to
+    // the already started download
+    ctrl = client.start_download(prog_table.at(2));
 
+    for(size_t i = 0; i < 2; ++i) {
+ 
+        ctrl->debug_print();
+
+        size_t playback_pos = i*256*1024;
+        std::cout << "setting playback position to " << playback_pos << std::endl;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(250);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(150);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(50);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(10);
+    }
+
+    client.remove_download(ctrl);
+
+    // should give a warning in the log, but not crash
+    client.remove_download(ctrl);
+    
     return 0;
 }

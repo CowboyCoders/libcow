@@ -41,7 +41,7 @@ namespace libcow
 
         libtorrent::torrent_handle torrent_handle_;
 
-        dispatcher disp_;
+        dispatcher* disp_;
     };
 }
 

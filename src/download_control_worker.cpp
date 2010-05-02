@@ -12,22 +12,21 @@ download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
                                                  int critical_window_length,
                                                  int critical_window_timeout)
     : torrent_handle_(h),
-      critical_window_(critical_window_length),
-      disp_(critical_window_timeout)
-      
+      critical_window_(critical_window_length)
 {
     critically_requested_ = 
         std::vector<bool>(torrent_handle_.get_torrent_info().num_pieces(), false);
+    disp_ = new dispatcher(critical_window_timeout);
 }
 
 download_control_worker::~download_control_worker()
 {
-
+    delete disp_;
 }
 
 void download_control_worker::set_critical_window(int num_pieces)
 {
-    disp_.post(boost::bind(
+    disp_->post(boost::bind(
         &download_control_worker::handle_set_critical_window, this, num_pieces));
 }
 
@@ -38,7 +37,7 @@ void download_control_worker::handle_set_critical_window(int num_pieces)
 
 void download_control_worker::add_download_device(download_device* dd)
 {
-    disp_.post(boost::bind(
+    disp_->post(boost::bind(
         &download_control_worker::handle_add_download_device, this, dd));
 }
 
@@ -51,7 +50,7 @@ void download_control_worker::handle_add_download_device(download_device* dd)
 
 void download_control_worker::pre_buffer(const std::vector<libcow::piece_request>& requests)
 {
-    disp_.post(boost::bind(
+    disp_->post(boost::bind(
         &download_control_worker::handle_pre_buffer, this, requests));
 
 }
@@ -80,7 +79,7 @@ void download_control_worker::handle_pre_buffer(const std::vector<libcow::piece_
 
 void download_control_worker::set_playback_position(size_t offset, bool force_request)
 {
-    disp_.post(boost::bind(
+    disp_->post(boost::bind(
         &download_control_worker::handle_set_playback_position, this, offset, force_request));
 }
 
@@ -128,7 +127,7 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
         int device_index = rand() % random_access_devices.size();
 
         download_device* dev = random_access_devices[device_index];
-        disp_.post_delayed(
+        disp_->post_delayed(
             boost::bind(&download_control_worker::fetch_missing_pieces, this, 
                         dev, 
                         first_piece_to_prioritize, 

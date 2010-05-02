@@ -16,9 +16,10 @@ namespace libcow
 
         void set_piece_src(int source, size_t piece_index);
         void invoke_after_init(boost::function<void(void)> callback);
-        void handle_alert(const libtorrent::alert* alert);
         void invoke_when_downloaded(const std::vector<int>& pieces, 
                                     boost::function<void(std::vector<int>)> callback);
+        void signal_startup_complete();
+        void signal_piece_finished(int piece_index);
     private:
         class piece_request
         {
@@ -44,7 +45,7 @@ namespace libcow
         void update_piece_requests(int piece_id);
         std::vector<int> missing_pieces(const std::vector<int>& pieces);
 
-        dispatcher disp_;
+        dispatcher* disp_;
         libtorrent::torrent_handle& torrent_handle_;
 
         std::multimap<int, piece_request> piece_nr_to_request_;

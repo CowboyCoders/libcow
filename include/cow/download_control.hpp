@@ -221,15 +221,16 @@ namespace libcow {
         }
 
     private:
+        void signal_startup_complete() {
+            event_handler_->signal_startup_complete();
+        }
+        
+        void signal_piece_finished(int piece_index) {
+            event_handler_->signal_piece_finished(piece_index);
+        }
+
         download_control_event_handler* event_handler_;
         download_control_worker* worker_;
-
-        // used by cow_client when a new libtorrent::alert arrives.
-        // this is possible since cow_client is friend
-        // with download_control. we don't want to make this public.
-        void handle_alert(const libtorrent::alert* alert) {
-            event_handler_->handle_alert(alert);
-        }
 
         void set_piece_src(int source, size_t piece_index) {
             event_handler_->set_piece_src(source, piece_index);
@@ -241,7 +242,7 @@ namespace libcow {
 
         int id_;
 
-        friend class cow_client;
+        friend class cow_client_worker;
     };
 }
 

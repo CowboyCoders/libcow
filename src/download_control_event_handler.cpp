@@ -10,21 +10,21 @@
 using namespace libcow;
 
 download_control_event_handler::download_control_event_handler(libtorrent::torrent_handle& h)
-    : disp_(0),
-      is_libtorrent_ready_(false),
+    : is_libtorrent_ready_(false),
       torrent_handle_(h)
 {
     piece_origin_ = std::vector<int>(torrent_handle_.get_torrent_info().num_pieces(),0);
+    disp_ = new dispatcher(0);
 }
 
 download_control_event_handler::~download_control_event_handler()
 {
-
+    delete disp_;
 }
 
 void download_control_event_handler::set_piece_src(int source, size_t piece_index)
 {
-    disp_.post(boost::bind(
+    disp_->post(boost::bind(
         &download_control_event_handler::handle_set_piece_src, this, source, piece_index));
 }
 
@@ -39,7 +39,7 @@ void download_control_event_handler::handle_set_piece_src(int source, size_t pie
 
 void download_control_event_handler::invoke_after_init(boost::function<void(void)> callback)
 {
-    disp_.post(
+    disp_->post(
         boost::bind(&download_control_event_handler::handle_invoke_after_init, 
                     this, 
                     callback));
@@ -64,28 +64,18 @@ void download_control_event_handler::signal_startup_callbacks()
     startup_complete_callbacks_.clear();
 }
 
-// called by the cow_client alert handler thread
-void download_control_event_handler::handle_alert(const libtorrent::alert* alert)
+void download_control_event_handler::signal_startup_complete()
 {
-    if(libtorrent::alert_cast<libtorrent::state_changed_alert>(alert)) 
-    {
-        disp_.post(
-            boost::bind(&download_control_event_handler::set_libtorrent_ready, this));
-        disp_.post<boost::function<void()> >(
-            boost::bind(&download_control_event_handler::signal_startup_callbacks,this));
-    } 
-    else if(const libtorrent::piece_finished_alert* piece_alert = 
-                libtorrent::alert_cast<libtorrent::piece_finished_alert>(alert)) 
-    {
-        int piece_id = piece_alert->piece_index;
-        
-        disp_.post<boost::function<void()> >(
-            boost::bind(&download_control_event_handler::update_piece_requests,this,piece_id));
-    }
-    else
-    {
-        /* silently discard alert */
-    }
+    disp_->post(
+        boost::bind(&download_control_event_handler::set_libtorrent_ready, this));
+    disp_->post(
+        boost::bind(&download_control_event_handler::signal_startup_callbacks,this));
+}
+
+void download_control_event_handler::signal_piece_finished(int piece_index)
+{
+    disp_->post(
+        boost::bind(&download_control_event_handler::update_piece_requests, this, piece_index));
 }
 
 void download_control_event_handler::set_libtorrent_ready()

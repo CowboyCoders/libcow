@@ -34,9 +34,10 @@ or implied, of CowboyCoders.
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/thread/future.hpp>
 
-#include "cow/download_device_manager.hpp"
 #include "cow/dispatcher.hpp"
+#include "cow/cow_client_worker.hpp"
 
 namespace libcow {    
 
@@ -81,20 +82,36 @@ namespace libcow {
         * @param program The the program to start downloading.
         * @return A pointer to the download_control used for this program.
         */
-        download_control* start_download(const libcow::program_info& program);
+        download_control* start_download(const libcow::program_info& program)
+        {
+            boost::promise<download_control*> promise;
+            boost::unique_future<download_control*> future = promise.get_future();
+
+            worker_->start_download(promise, program, download_directory_);
+            future.wait();
+            return future.get();
+        }
 
        /**
         * This function returns a list of all active libcow::download_controls.
         * @return A list of libcow::download_control pointers for all active downloads..
         */
-        const std::list<download_control*>& get_active_downloads() const;
+        std::list<download_control*> get_active_downloads() const
+        {
+            //boost::promise<std::list<download_control*> > promise;
+            std::list<download_control*> active_downloads;
+            return active_downloads;
+        }
 
        /**
         * This function will stop the download of the specified program, and
         * erase the associated download_control.
         * @param download A pointer to the download_control instance.
         */
-        void remove_download(download_control* download);
+        void remove_download(download_control* download)
+        {
+            worker_->remove_download(download);
+        }
 
        /**
         * This function registers a new download_device_factory which can be used
@@ -103,35 +120,25 @@ namespace libcow {
         * @param identifier A string describing the download_device, e.g. "http", "multicast" etc.
         */
         void register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 
-                                              const std::string& identifier); 
+                                              const std::string& identifier)
+        {
+            worker_->register_download_device_factory(factory, identifier);
+        }
 
     private:
-        libtorrent::torrent_handle create_torrent_handle(const properties& props);
         void alert_thread_function();
         void stop_alert_thread();
         void handle_stop_alert_thread();
-        void handle_start_download(libtorrent::torrent_handle torrent, download_control* download);
-        void handle_remove_download(download_control* download);
 
-        typedef std::vector<download_control*> download_control_vector;
-        // should only be accessed via alert_disp_
-        download_control_vector download_controls_;
+        cow_client_worker* worker_;
 
-        void clear_download_controls();
-
-        download_device_manager dd_manager_;
-        libtorrent::session session_;
-        std::string download_directory_;             
-            
         dispatcher* alert_disp_;
-        // should only be accessed via alert_disp_
-        bool alert_thread_running_;
-        // should only be accessed via alert_disp_
-        std::map<libtorrent::torrent_handle, download_control*>
-            download_control_for_torrent;
 
-        int download_device_id_;
-        std::map<int,std::string> piece_sources_;
+        bool alert_thread_running_;
+
+        std::string download_directory_;
+
+        libtorrent::session session_;
 	};
 
     /** \example basic_example.cpp
