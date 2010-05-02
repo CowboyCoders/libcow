@@ -130,8 +130,6 @@ namespace libcow {
         std::map<libtorrent::torrent_handle, download_control*>
             download_control_for_torrent;
 
-        size_t max_num_log_messages_;
-
         int download_device_id_;
         std::map<int,std::string> piece_sources_;
 	};

@@ -353,9 +353,9 @@ void cow_client::alert_thread_function()
             alert_ptr = session_.pop_alert();
             alert = alert_ptr.get();
         }
-
+        libcow::system::sleep(50);
         //loop
-        alert_disp_->post_delayed(boost::bind(&cow_client::alert_thread_function, this));
+        alert_disp_->post(boost::bind(&cow_client::alert_thread_function, this));
     }
 }
 

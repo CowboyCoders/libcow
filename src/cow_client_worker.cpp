@@ -4,6 +4,7 @@
 using namespace libcow;
 
 cow_client_worker::cow_client_worker()
+    : disp_(0)
 {
 
 }

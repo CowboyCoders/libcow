@@ -13,6 +13,8 @@ namespace libcow
     public:
         cow_client_worker();
         ~cow_client_worker();
+    private:
+        dispatcher disp_;
     };
 
 }
