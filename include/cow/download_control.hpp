@@ -203,6 +203,22 @@ namespace libcow {
         {
             worker_->set_critical_window(num_pieces);
         }
+
+        /**
+        * Adds a function to be called when new pieces are added.
+        * @param func A callback function of type void(int).
+        */
+        void set_piece_finished_callback(const boost::function<void(int)>& func) {
+            event_handler_->set_piece_finished_callback(func);
+        }
+
+        /**
+        * Removes a 'piece added' callback.
+        * @param func A callback function of type void(int).
+        */
+        void unset_piece_finished_callback() {
+            event_handler_->unset_piece_finished_callback();
+        }
         
         /**
          * Prints useful debug information

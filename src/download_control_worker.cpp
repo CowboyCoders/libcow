@@ -22,6 +22,7 @@ download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
 download_control_worker::~download_control_worker()
 {
     delete disp_;
+    download_devices_.clear();
 }
 
 void download_control_worker::set_critical_window(int num_pieces)

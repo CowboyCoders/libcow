@@ -33,8 +33,8 @@ namespace libcow
 
         void signal_piece_finished(const libtorrent::torrent_handle& torrent, int piece_index);
         void signal_startup_complete(const libtorrent::torrent_handle& torrent);
-        
-    
+        void get_active_downloads(boost::promise<std::list<download_control*> >& promise);
+
     private:
         void handle_start_download(boost::promise<download_control*>& promise,
                                    const program_info& program,
@@ -47,6 +47,7 @@ namespace libcow
         
         void handle_signal_piece_finished(const libtorrent::torrent_handle& torrent, int piece_index);
         void handle_signal_startup_complete(const libtorrent::torrent_handle& torrent);
+        void handle_get_active_downloads(boost::promise<std::list<download_control*> >& promise);
 
         void clear_download_controls();
         libtorrent::torrent_handle create_torrent_handle(const properties& props,

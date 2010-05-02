@@ -283,3 +283,20 @@ void cow_client_worker::handle_signal_startup_complete(const libtorrent::torrent
         dev->signal_startup_complete();
     }
 }
+
+void cow_client_worker::get_active_downloads(boost::promise<std::list<download_control*> >& promise)
+{
+    disp_->post(boost::bind(
+        &cow_client_worker::handle_get_active_downloads, this, boost::ref(promise)));
+}
+
+void cow_client_worker::handle_get_active_downloads(boost::promise<std::list<download_control*> >& promise)
+{
+    std::list<download_control*> active_downloads;
+    download_control_vector::iterator iter;
+    for(iter = download_controls_.begin(); iter != download_controls_.end(); ++iter)
+    {
+        active_downloads.push_back(*iter);
+    }
+    promise.set_value(active_downloads);
+}

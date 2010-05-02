@@ -98,9 +98,12 @@ namespace libcow {
         */
         std::list<download_control*> get_active_downloads() const
         {
-            //boost::promise<std::list<download_control*> > promise;
-            std::list<download_control*> active_downloads;
-            return active_downloads;
+            boost::promise<std::list<download_control*> > promise;
+            boost::unique_future<std::list<download_control*> > future = promise.get_future();
+
+            worker_->get_active_downloads(promise);
+            future.wait();
+            return future.get();
         }
 
        /**

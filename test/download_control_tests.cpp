@@ -33,6 +33,7 @@ or implied, of CowboyCoders.
 #include <libtorrent/session.hpp>
 #include <boost/thread.hpp>
 #include <cow/cow.hpp>
+#include <cassert>
 
 boost::mutex mutex;
 boost::condition_variable cond;
@@ -47,6 +48,11 @@ void invoked_after_init()
 void got_wanted_pieces()
 {
     std::cout << "Got wanted pieces!" << std::endl;
+}
+
+void piece_finished_callback(int piece_index)
+{
+    std::cout << "Piece finished: " << piece_index << std::endl;
 }
 
 int main(int argc, char* argv[])
@@ -82,6 +88,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // test get_active_downloads
+    std::list<libcow::download_control*> active_downloads 
+        = client.get_active_downloads();
+
+    assert(active_downloads.size() == 0);
+
     std::cout << "starting download" << std::endl;
     libcow::download_control* ctrl = client.start_download(prog_table.at(2));
 
@@ -89,6 +101,8 @@ int main(int argc, char* argv[])
         std::cout << "start_download returned null" << std::endl;
         return 1;
     }
+
+    ctrl->set_piece_finished_callback(piece_finished_callback);
 
     ctrl->invoke_after_init(boost::bind(invoked_after_init));
 
@@ -128,15 +142,15 @@ int main(int argc, char* argv[])
     libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
 
     //FIXME: this test depends on file being big_buck_bunny.mpg
-    //std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
-    //std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
-    //std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
+    std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 
     for(size_t i = 0; i < 10; ++i) {
  
-        ctrl->debug_print();
+        //ctrl->debug_print();
 
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;
@@ -153,13 +167,22 @@ int main(int argc, char* argv[])
         libcow::system::sleep(10);
     }
 
+    // test get_active_downloads
+    active_downloads 
+        = client.get_active_downloads();
+
+    assert(active_downloads.size() == 1);
+    assert(active_downloads.front() == ctrl);
+
     // make sure that this stupid move just gives us a pointer to
     // the already started download
     ctrl = client.start_download(prog_table.at(2));
 
-    for(size_t i = 0; i < 2; ++i) {
+    ctrl->unset_piece_finished_callback();
+
+    for(size_t i = 11; i <= 15; ++i) {
  
-        ctrl->debug_print();
+        //ctrl->debug_print();
 
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;

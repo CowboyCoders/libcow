@@ -76,6 +76,8 @@ void download_control_event_handler::signal_piece_finished(int piece_index)
 {
     disp_->post(
         boost::bind(&download_control_event_handler::update_piece_requests, this, piece_index));
+    disp_->post(
+        boost::bind(&download_control_event_handler::invoke_piece_finished_callback, this, piece_index));
 }
 
 void download_control_event_handler::set_libtorrent_ready()
@@ -167,4 +169,33 @@ std::vector<int> download_control_event_handler::missing_pieces(const std::vecto
 	} else {
         return pieces;
     }
+}
+
+void download_control_event_handler::invoke_piece_finished_callback(int piece_index)
+{
+    if(!piece_finished_callback_.empty()) {
+        piece_finished_callback_(piece_index);
+    }
+}
+
+void download_control_event_handler::set_piece_finished_callback(const boost::function<void(int)>& func)
+{
+    disp_->post(boost::bind(
+        &download_control_event_handler::handle_set_piece_finished_callback, this, func));
+}
+
+void download_control_event_handler::handle_set_piece_finished_callback(const boost::function<void(int)>& func)
+{
+    piece_finished_callback_ = func;
+}
+
+void download_control_event_handler::unset_piece_finished_callback()
+{
+    disp_->post(boost::bind(
+        &download_control_event_handler::handle_unset_piece_finished_callback, this));
+}
+
+void download_control_event_handler::handle_unset_piece_finished_callback()
+{
+    piece_finished_callback_.clear();
 }
