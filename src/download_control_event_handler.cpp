@@ -54,7 +54,6 @@ void download_control_event_handler::handle_invoke_after_init(boost::function<vo
     }
 }
 
-// invoked by event_disp_
 void download_control_event_handler::signal_startup_callbacks()
 {
     std::vector<boost::function<void()> >::iterator it;
@@ -126,9 +125,6 @@ void download_control_event_handler::handle_invoke_when_downloaded(const std::ve
             reqs.push_back(libcow::piece_request(
                 torrent_handle_.get_torrent_info().piece_length(), piece_id, 1));
         }
-
-        // ugly side effect to call pre_buffer here, plus, it's not thread safe
-        //pre_buffer(reqs);
     } else {
         callback(pieces);
     }

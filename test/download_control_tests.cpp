@@ -120,9 +120,9 @@ int main(int argc, char* argv[])
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 
-    for(size_t i = 0; i < 4; ++i) {
+    for(size_t i = 0; i < 400; ++i) {
  
-        ctrl->debug_print();
+        //ctrl->debug_print();
 
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
         libcow::system::sleep(250);
     }
 
-    client.remove_download(ctrl);
+    //client.remove_download(ctrl);
 
     return 0;
 }

@@ -131,10 +131,7 @@ namespace libcow {
             download_control_for_torrent;
 
         size_t max_num_log_messages_;
-        int logging_interval_;
 
-        static const int default_max_num_log_messages_;
-        static const int default_logging_interval_;
         int download_device_id_;
         std::map<int,std::string> piece_sources_;
 	};

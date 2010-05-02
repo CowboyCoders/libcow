@@ -49,9 +49,6 @@ either expressed or implied, of CowboyCoders.
 
 using namespace libcow;
 
-const int cow_client::default_max_num_log_messages_ = 1000;
-const int cow_client::default_logging_interval_ = 1; // seconds
-
 template <typename T>
 struct match_second 
 {
@@ -81,9 +78,7 @@ struct check_pointer_value
 };
 
 cow_client::cow_client()
-    : max_num_log_messages_(default_max_num_log_messages_),
-      logging_interval_(default_logging_interval_),
-      download_device_id_(0),
+    : download_device_id_(0),
       alert_thread_running_(true)
 
 {
@@ -92,7 +87,7 @@ cow_client::cow_client()
 							libtorrent::alert::storage_notification | 
                             libtorrent::alert::status_notification);
     libtorrent::session_settings settings;
-    settings.user_agent = "cow_agent";
+    settings.user_agent = "libcow";
     settings.allowed_fast_set_size = 1000; // 1000 pieces without choking
     settings.allow_multiple_connections_per_ip = true;
     settings.prioritize_partial_pieces = true; //TODO: might not be good, we'll see!
@@ -105,30 +100,37 @@ cow_client::cow_client()
     // turns all choking off
     session_.set_max_uploads(INT_MAX);
 
-    // no limits!! YEEHA!
+    // no limits!
     session_.set_upload_rate_limit(0);
     session_.set_download_rate_limit(0);
     session_.set_local_upload_rate_limit(0);
     session_.set_local_download_rate_limit(0);
 
     // start alert thread
-    alert_disp_ = new dispatcher(0);
+    alert_disp_ = new dispatcher(250);
     alert_disp_->post(boost::bind(&cow_client::alert_thread_function, this));
 
 }
 
 cow_client::~cow_client()
 {
-    alert_disp_->post(boost::bind(&cow_client::clear_download_controls, this));
-
     stop_alert_thread();
     
     delete alert_disp_;
+
+    clear_download_controls();
 }
 
 // invoked by alert_disp_
 void cow_client::clear_download_controls() 
 {
+    download_control_vector::iterator iter;
+    for(iter = download_controls_.begin(); iter != download_controls_.end(); ++iter) {
+        download_control* current = *iter;
+        if(current) {
+            delete current;
+        }
+    }
     download_controls_.clear();
 }
 
@@ -352,11 +354,8 @@ void cow_client::alert_thread_function()
             alert = alert_ptr.get();
         }
 
-        //FIXME: use delayed post, not sleep!!!
-        libcow::system::sleep(logging_interval_);
-
         //loop
-        alert_disp_->post(boost::bind(&cow_client::alert_thread_function, this));
+        alert_disp_->post_delayed(boost::bind(&cow_client::alert_thread_function, this));
     }
 }
 
