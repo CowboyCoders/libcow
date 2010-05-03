@@ -66,14 +66,11 @@ int main() {
     // that can be used to extract information about the download, as well as stop it.
     libcow::download_control* controller = example_client.start_download(program_info);
     
-    // In order to request data from the on_demand_server, we must first create a vector of piece_requests.
-    std::vector<libcow::piece_request> requests;
-    // The index of the piece to request.
-    size_t index = 0;
-    // The number of pieces in a row to request. In this example, we will request pieces 0 to 9.
-    size_t number_of_pieces = 10;
-    // Create a new libcow::piece_request and add it to the vector.
-    requests.push_back(libcow::piece_request(controller->piece_length(), index, number_of_pieces));
+    // In order to request data from the on_demand_server, we must first create a vector of integers.
+    std::vector<int> requests;
+    // Addings piece indices for the pieces we want to request
+    for(int idx = 0; idx < 10; ++idx)
+        requests.push_back(idx);
     // Sends the requests to the libcow::download_control. After some time, the
     // pieces will be visible in the log.
     controller->pre_buffer(requests);
