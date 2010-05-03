@@ -50,14 +50,14 @@ void download_control_worker::handle_add_download_device(download_device* dd)
     download_devices_.push_back(dd_ptr);
 }
 
-void download_control_worker::pre_buffer(const std::vector<libcow::piece_request>& requests)
+void download_control_worker::pre_buffer(const std::vector<int>& requests)
 {
     disp_->post(boost::bind(
         &download_control_worker::handle_pre_buffer, this, requests));
 
 }
 
-void download_control_worker::handle_pre_buffer(const std::vector<libcow::piece_request>& requests)
+void download_control_worker::handle_pre_buffer(const std::vector<int>& requests)
 {
     std::vector<boost::shared_ptr<download_device> >::iterator it;
 
@@ -73,7 +73,13 @@ void download_control_worker::handle_pre_buffer(const std::vector<libcow::piece_
 
     if(random_access_device) 
     {
-        random_access_device->get_pieces(requests);
+        int piece_length = torrent_handle_.get_torrent_info().piece_length();
+        std::vector<piece_request> wrapped_request;
+        std::vector<int>::const_iterator requests_iter;
+        for(requests_iter = requests.begin(); requests_iter != requests.end(); ++requests_iter) {
+            wrapped_request.push_back(piece_request(piece_length, *requests_iter, 1));
+        }
+        random_access_device->get_pieces(wrapped_request);
     } else {
         BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
     }

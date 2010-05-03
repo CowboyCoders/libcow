@@ -118,21 +118,22 @@ int main(int argc, char* argv[])
 
     std::cout << "testing blocking read...." << std::endl;
 
-    std::vector<libcow::piece_request> reqs1;
-    reqs1.push_back(libcow::piece_request(ctrl->piece_length(), 0, 1));
+    std::vector<int> reqs1;
+    reqs1.push_back(0);
     ctrl->pre_buffer(reqs1);
 
-    std::vector<libcow::piece_request> reqs2;
-    reqs2.push_back(libcow::piece_request(ctrl->piece_length(), 1, 1));
+    std::vector<int> reqs2;
+    reqs2.push_back(1);
     ctrl->pre_buffer(reqs2);
 
-    std::vector<libcow::piece_request> reqs3;
-    reqs3.push_back(libcow::piece_request(ctrl->piece_length(), 2, 1));
+    std::vector<int> reqs3;
+    reqs3.push_back(2);
     ctrl->pre_buffer(reqs3);
 
-    std::vector<libcow::piece_request> reqs4;
-    reqs4.push_back(libcow::piece_request(ctrl->piece_length(), ctrl->num_pieces()-1, 1));
+    std::vector<int> reqs4;
+    reqs4.push_back(ctrl->num_pieces() - 1);
     ctrl->pre_buffer(reqs4);
+
 
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 

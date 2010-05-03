@@ -81,7 +81,7 @@ namespace libcow {
         * are downloaded by requesting them from a random access download device.
         * @param requests A vector of requests to download.
         */
-        void pre_buffer(const std::vector<libcow::piece_request>& requests)
+        void pre_buffer(const std::vector<int>& requests)
         {
             worker_->pre_buffer(requests);
         }

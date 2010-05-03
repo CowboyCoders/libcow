@@ -18,13 +18,13 @@ namespace libcow
 
         void set_critical_window(int num_pieces);
         void add_download_device(download_device* dd);
-        void pre_buffer(const std::vector<libcow::piece_request>& requests);
+        void pre_buffer(const std::vector<int>& requests);
         void set_playback_position(size_t offset, bool force_request);
 
     private:
         void handle_set_critical_window(int num_pieces);
         void handle_add_download_device(download_device* dd);
-        void handle_pre_buffer(const std::vector<libcow::piece_request>& requests);
+        void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
         
         void fetch_missing_pieces(download_device* dev,
