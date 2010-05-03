@@ -2,11 +2,11 @@
 #define ___libcow_download_control_worker___
 
 #include <libtorrent/torrent_handle.hpp>
-#include "cow/dispatcher.hpp"
 
 namespace libcow 
 {
     class download_device;
+    class dispatcher;
 
     class download_control_worker
     {
@@ -27,8 +27,8 @@ namespace libcow
         void handle_pre_buffer(const std::vector<libcow::piece_request>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
         
-        void fetch_missing_pieces(download_device* dev, 
-                                  int first_piece, 
+        void fetch_missing_pieces(download_device* dev,
+                                  int first_piece,
                                   int last_piece,
                                   bool force_request,
                                   boost::system::error_code& error);

@@ -222,13 +222,6 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     return static_cast<size_t>(file_handle_.gcount());
 }
 
-    std::vector<libcow::piece_request>::const_iterator piece_iter;
-    for(piece_iter = requests.begin(); piece_iter != requests.end(); ++piece_iter) {
-        if(handle_.is_valid()) {
-            handle_.piece_priority((*piece_iter).index,7);
-        }
-         
-
 size_t download_control::file_size() const
 {
     const libtorrent::file_entry& file_entry = handle_.get_torrent_info().files().at(0);
@@ -275,21 +268,3 @@ void download_control::debug_print()
 		 	  << " | peers: " << status.list_peers << std::endl;
 
 }
-
-    if(handle_.is_valid()) {
-        libtorrent::torrent_status status = handle_.status();
-        if(status.state == libtorrent::torrent_status::downloading ||
-           status.state == libtorrent::torrent_status::finished ||
-           status.state == libtorrent::torrent_status::seeding) 
-            return true;
-        }
-        // we might get the event here via callback, need to check 
-        // the bool variable
-        
-    }
-    return false;
-}
-
-void download_control::wait_for_startup(boost::function<void(void)> callback)
-{
-    if(is_running()) {

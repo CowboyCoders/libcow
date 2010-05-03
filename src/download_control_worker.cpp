@@ -2,6 +2,7 @@
 #include "cow/download_control_worker.hpp"
 #include "cow/download_device.hpp"
 #include "cow/piece_request.hpp"
+#include "cow/dispatcher.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>

@@ -29,10 +29,10 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_download_control___
 #define ___libcow_download_control___
 
-#include "cow/utils/buffer.hpp"
-#include "cow/dispatcher.hpp"
-#include "cow/download_control_event_handler.hpp"
-#include "cow/download_control_worker.hpp"
+#include <cow/utils/buffer.hpp>
+#include <cow/dispatcher.hpp>
+#include <cow/download_control_event_handler.hpp>
+#include <cow/download_control_worker.hpp>
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
@@ -218,7 +218,7 @@ namespace libcow {
         */
         void unset_piece_finished_callback() {
             event_handler_->unset_piece_finished_callback();
-        
+        } 
         /**
          * Prints useful debug information
          */
@@ -244,15 +244,15 @@ namespace libcow {
             event_handler_->signal_piece_finished(piece_index);
         }
 
-        download_control_event_handler* event_handler_;
-        download_control_worker* worker_;
 
         void set_piece_src(int source, size_t piece_index) {
             event_handler_->set_piece_src(source, piece_index);
         }
-
+        
         libtorrent::torrent_handle handle_;
-
+        download_control_event_handler* event_handler_;
+        download_control_worker* worker_;
+        
         std::ifstream file_handle_;
 
         int id_;
