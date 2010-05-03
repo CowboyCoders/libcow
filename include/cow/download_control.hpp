@@ -235,10 +235,7 @@ namespace libcow {
             return id_;
         }
 
-        void current_state(std::vector<int>& state)
-        {
-            // todo
-        }
+        bool current_state(std::vector<int>& state);
 
         std::map<int,std::string> get_device_names()
         {

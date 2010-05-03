@@ -59,6 +59,7 @@ void download_control_worker::pre_buffer(const std::vector<int>& requests)
 
 void download_control_worker::handle_pre_buffer(const std::vector<int>& requests)
 {
+    BOOST_LOG_TRIVIAL(info) << "download_control_worker: handle_pre_buffer called";
     std::vector<boost::shared_ptr<download_device> >::iterator it;
 
     download_device* random_access_device = 0;
@@ -79,6 +80,7 @@ void download_control_worker::handle_pre_buffer(const std::vector<int>& requests
         for(requests_iter = requests.begin(); requests_iter != requests.end(); ++requests_iter) {
             wrapped_request.push_back(piece_request(piece_length, *requests_iter, 1));
         }
+        BOOST_LOG_TRIVIAL(info) << "Sending piece request to on_demand_device";
         random_access_device->get_pieces(wrapped_request);
     } else {
         BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";

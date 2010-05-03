@@ -49,12 +49,6 @@ either expressed or implied, of CowboyCoders.
 
 using namespace libcow;
 
-// DANIEL, these should use some kind of namespace! 
-// Reason: for clarity, it seems to have them without namespace
-// you could also make them private, that's your choice...
-// DANIEL, these should use some kind of namespace! 
-// Reason: for clarity, it seems to have them without namespace
-// you could also make them private, that's your choice...
 cow_client::cow_client()
 {
     //TODO: change this to configurable log levels

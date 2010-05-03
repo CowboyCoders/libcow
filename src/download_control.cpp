@@ -221,6 +221,11 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     
     return static_cast<size_t>(file_handle_.gcount());
 }
+        
+bool download_control::current_state(std::vector<int>& state)
+{
+    return event_handler_->current_state(state);
+}
 
 size_t download_control::file_size() const
 {

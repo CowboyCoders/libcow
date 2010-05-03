@@ -37,7 +37,7 @@ struct check_pointer_value
 
 cow_client_worker::cow_client_worker(libtorrent::session& s)
     : torrent_session_(s),
-      download_device_id_(0)
+      download_device_id_(2)
 {
     disp_ = new dispatcher(0);
 }

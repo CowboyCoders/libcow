@@ -102,12 +102,24 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+
     ctrl->set_piece_finished_callback(piece_finished_callback);
 
     ctrl->invoke_after_init(boost::bind(invoked_after_init));
 
     boost::unique_lock<boost::mutex> lock(mutex);
     cond.wait(lock);
+    
+    std::vector<int> state;
+    ctrl->current_state(state);
+
+    std::vector<int>::iterator it;
+    std::cout << "CURRENT STATE" << std::endl;
+    for(it = state.begin(); it != state.end(); ++it)
+    {
+        std::cout << *it;
+    }
+    std::cout << std::endl;
 
     std::vector<int> must_have;
     must_have.push_back(1);

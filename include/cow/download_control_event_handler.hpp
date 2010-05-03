@@ -22,6 +22,7 @@ namespace libcow
         void signal_piece_finished(int piece_index);
         void set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void unset_piece_finished_callback();
+        bool current_state(std::vector<int>& state);
     private:
         class piece_request
         {
@@ -44,11 +45,13 @@ namespace libcow
                                            boost::function<void(std::vector<int>)> callback);
         void handle_set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void handle_unset_piece_finished_callback();
+        bool handle_current_state(std::vector<int>& state);
         void signal_startup_callbacks();
         void set_libtorrent_ready();
         void update_piece_requests(int piece_id);
         void invoke_piece_finished_callback(int piece_index, int device);
         std::vector<int> missing_pieces(const std::vector<int>& pieces);
+        void set_disk_source();
 
         dispatcher* disp_;
         libtorrent::torrent_handle& torrent_handle_;

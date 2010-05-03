@@ -6,8 +6,12 @@
 #include <boost/function.hpp>
 
 #include <libtorrent/alert_types.hpp>
+#include <algorithm>
 
 using namespace libcow;
+
+static int bittorrent_source_id = 2;
+static int disk_source_id = 1;
 
 download_control_event_handler::download_control_event_handler(libtorrent::torrent_handle& h)
     : is_libtorrent_ready_(false),
@@ -37,6 +41,36 @@ void download_control_event_handler::handle_set_piece_src(int source, size_t pie
     }
 }
 
+bool download_control_event_handler::current_state(std::vector<int>& state)
+{
+    boost::function<bool()> functor = 
+        boost::bind(&download_control_event_handler::handle_current_state,
+                    this,
+                    boost::ref(state));
+    boost::packaged_task<bool> task(functor);
+    boost::unique_future<bool> future = task.get_future();
+
+    disp_->post(boost::bind(&boost::packaged_task<bool>::operator(), 
+                boost::ref(task)));
+    std::cout << "waiting for future" << std::endl;
+    future.wait();
+    return future.get();
+}
+
+bool download_control_event_handler::handle_current_state(std::vector<int>& state)
+{
+    std::cout << "pieces_origin_.size() " << piece_origin_.size() << std::endl;
+    std::vector<int>::const_iterator sources_iter;
+    for(sources_iter = piece_origin_.begin();
+        sources_iter != piece_origin_.end();
+        ++sources_iter) 
+    {
+        state.push_back(*sources_iter);
+    }
+    std::cout << "returning from for loop" << std::endl;
+    return true;
+}
+
 void download_control_event_handler::invoke_after_init(boost::function<void(void)> callback)
 {
     disp_->post(
@@ -54,9 +88,28 @@ void download_control_event_handler::handle_invoke_after_init(boost::function<vo
     }
 }
 
+void download_control_event_handler::set_disk_source()
+{
+    if(torrent_handle_.is_valid()) {
+        if(!torrent_handle_.is_seed()) {
+            libtorrent::bitfield pieces = torrent_handle_.status().pieces;
+            for(int i = 0; i < pieces.size(); ++i) {
+                if(pieces[i]) {
+                    piece_origin_[i] = disk_source_id;
+                }
+            }
+        } else {
+            std::fill(piece_origin_.begin(),piece_origin_.end(), disk_source_id);
+        }
+    }
+}
 void download_control_event_handler::signal_startup_callbacks()
 {
     std::vector<boost::function<void()> >::iterator it;
+    
+    // we recieved that libtorrent is ready, 
+    // hence all data is added from disk
+    set_disk_source();
 
     for(it = startup_complete_callbacks_.begin(); it != startup_complete_callbacks_.end(); ++it) {
         (*it)();
@@ -76,8 +129,20 @@ void download_control_event_handler::signal_piece_finished(int piece_index)
 {
     disp_->post(
         boost::bind(&download_control_event_handler::update_piece_requests, this, piece_index));
+    int source;
+    
+    if(piece_index < piece_origin_.size()) {
+        source = piece_origin_[piece_index];
+    }
+
+    if(source == 0) {
+        // this piece originates from bittorrent since it hasn't been added by any other source
+       source = bittorrent_source_id;
+       piece_origin_[piece_index] = source;
+    }
+    
     disp_->post(
-        boost::bind(&download_control_event_handler::invoke_piece_finished_callback, this, piece_index,0));
+        boost::bind(&download_control_event_handler::invoke_piece_finished_callback, this, piece_index,source));
 }
 
 void download_control_event_handler::set_libtorrent_ready()
