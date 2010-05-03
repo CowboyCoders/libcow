@@ -50,9 +50,9 @@ void got_wanted_pieces()
     std::cout << "Got wanted pieces!" << std::endl;
 }
 
-void piece_finished_callback(int piece_index)
+void piece_finished_callback(int piece_index, int device)
 {
-    std::cout << "Piece finished: " << piece_index << std::endl;
+    std::cout << "Piece finished: " << piece_index << " from device: " << device << std::endl;
 }
 
 int main(int argc, char* argv[])

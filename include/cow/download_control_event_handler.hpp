@@ -20,7 +20,7 @@ namespace libcow
                                     boost::function<void(std::vector<int>)> callback);
         void signal_startup_complete();
         void signal_piece_finished(int piece_index);
-        void set_piece_finished_callback(const boost::function<void(int)>& func);
+        void set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void unset_piece_finished_callback();
     private:
         class piece_request
@@ -42,12 +42,12 @@ namespace libcow
         void handle_invoke_after_init(boost::function<void(void)> callback);
         void handle_invoke_when_downloaded(const std::vector<int>& pieces, 
                                            boost::function<void(std::vector<int>)> callback);
-        void handle_set_piece_finished_callback(const boost::function<void(int)>& func);
+        void handle_set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void handle_unset_piece_finished_callback();
         void signal_startup_callbacks();
         void set_libtorrent_ready();
         void update_piece_requests(int piece_id);
-        void invoke_piece_finished_callback(int piece_index);
+        void invoke_piece_finished_callback(int piece_index, int device);
         std::vector<int> missing_pieces(const std::vector<int>& pieces);
 
         dispatcher* disp_;
@@ -56,7 +56,7 @@ namespace libcow
         std::multimap<int, piece_request> piece_nr_to_request_;
 
         std::vector<boost::function<void(void)> > startup_complete_callbacks_;
-        boost::function<void(int)> piece_finished_callback_;
+        boost::function<void(int,int)> piece_finished_callback_;
 
         std::vector<int> piece_origin_;
 

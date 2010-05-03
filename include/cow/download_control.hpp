@@ -208,7 +208,7 @@ namespace libcow {
         * Adds a function to be called when new pieces are added.
         * @param func A callback function of type void(int).
         */
-        void set_piece_finished_callback(const boost::function<void(int)>& func) {
+        void set_piece_finished_callback(const boost::function<void(int,int)>& func) {
             event_handler_->set_piece_finished_callback(func);
         }
 
@@ -233,6 +233,16 @@ namespace libcow {
         int id()
         {
             return id_;
+        }
+
+        void current_state(std::vector<int>& state)
+        {
+            // todo
+        }
+
+        std::map<int,std::string> get_device_names()
+        {
+            return std::map<int,std::string>();
         }
 
     private:
