@@ -227,6 +227,11 @@ bool download_control::current_state(std::vector<int>& state)
     return event_handler_->current_state(state);
 }
 
+void download_control::current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback)
+{
+    return event_handler_->current_state(state,callback);
+}
+
 size_t download_control::file_size() const
 {
     const libtorrent::file_entry& file_entry = handle_.get_torrent_info().files().at(0);

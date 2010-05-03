@@ -236,6 +236,7 @@ namespace libcow {
         }
 
         bool current_state(std::vector<int>& state);
+        void current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
 
         std::map<int,std::string> get_device_names()
         {

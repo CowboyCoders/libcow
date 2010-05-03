@@ -52,14 +52,34 @@ bool download_control_event_handler::current_state(std::vector<int>& state)
 
     disp_->post(boost::bind(&boost::packaged_task<bool>::operator(), 
                 boost::ref(task)));
-    std::cout << "waiting for future" << std::endl;
     future.wait();
     return future.get();
+}
+        
+void download_control_event_handler::current_state(std::vector<int>* state, 
+                                                   boost::function<void(std::vector<int>*)> callback)
+{
+    disp_->post(boost::bind(&download_control_event_handler::handle_async_current_state,
+                            this,
+                            state,
+                            callback));
+}
+
+void download_control_event_handler::handle_async_current_state(std::vector<int>* state,
+                                                                boost::function<void(std::vector<int>*)> callback)
+{
+    std::vector<int>::const_iterator sources_iter;
+    for(sources_iter = piece_origin_.begin();
+        sources_iter != piece_origin_.end();
+        ++sources_iter) 
+    {
+        state->push_back(*sources_iter);
+    }
+    callback(state);
 }
 
 bool download_control_event_handler::handle_current_state(std::vector<int>& state)
 {
-    std::cout << "pieces_origin_.size() " << piece_origin_.size() << std::endl;
     std::vector<int>::const_iterator sources_iter;
     for(sources_iter = piece_origin_.begin();
         sources_iter != piece_origin_.end();
@@ -67,7 +87,6 @@ bool download_control_event_handler::handle_current_state(std::vector<int>& stat
     {
         state.push_back(*sources_iter);
     }
-    std::cout << "returning from for loop" << std::endl;
     return true;
 }
 
