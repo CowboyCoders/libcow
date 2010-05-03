@@ -31,8 +31,6 @@ either expressed or implied, of CowboyCoders.
 int main() {
     // Create a cow_client.
     libcow::cow_client example_client;
-    // Start logging. All logging will be sent to a file called program_table_example.log.
-    example_client.start_logger();
 
     // Set download directory for the movie.
     std::string download_dir = ".";
@@ -72,8 +70,7 @@ int main() {
     
     // Stop the download.
     example_client.remove_download(controller);
-    // Stop the logging.
-    example_client.stop_logger();
+
     // Quit :-)
     return 0;
 }

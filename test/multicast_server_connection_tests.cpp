@@ -58,7 +58,7 @@ int main()
 
     libcow::properties settings;
     settings["listen_address"] = "0.0.0.0";
-    settings["multicast_port"] = "1234";
+    settings["multicast_port"] = "12345";
     settings["multicast_address"] = "224.0.100.100";
     settings["packet_size"] = "1024";
     settings["piece_size"] = "262144";

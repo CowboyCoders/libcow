@@ -31,8 +31,29 @@ or implied, of CowboyCoders.
 #include <boost/log/trivial.hpp>
 #include <boost/shared_ptr.hpp>
 #include <libtorrent/session.hpp>
-
+#include <boost/thread.hpp>
 #include <cow/cow.hpp>
+#include <cassert>
+
+boost::mutex mutex;
+boost::condition_variable cond;
+
+void invoked_after_init() 
+{
+    
+    std::cout << "Init done!" << std::endl;
+    cond.notify_one();
+}
+
+void got_wanted_pieces()
+{
+    std::cout << "Got wanted pieces!" << std::endl;
+}
+
+void piece_finished_callback(int piece_index)
+{
+    std::cout << "Piece finished: " << piece_index << std::endl;
+}
 
 int main(int argc, char* argv[])
 {
@@ -48,8 +69,6 @@ int main(int argc, char* argv[])
 
     libcow::cow_client client;
 
-    client.start_logger();
-
     client.set_download_directory(dl_path);
     client.set_bittorrent_port(port_num);
     client.register_download_device_factory(
@@ -62,26 +81,40 @@ int main(int argc, char* argv[])
         "multicast");
 
     libcow::program_table prog_table;
-    prog_table.load_from_http("cowboycoders.se/program_table.xml",120);
+    prog_table.load_from_http("tau.hopto.org/program_table.xml",120);
 
-    std::cout << "starting download" << std::endl;
-    libcow::download_control* ctrl = client.start_download(prog_table.at(0));
-
-    if(!ctrl) {
+    if(prog_table.size() == 0) {
+        std::cout << "Couldn't fetch program table!" << std::endl;
         return 1;
     }
 
-    libcow::progress_info pinfo = ctrl->get_progress();
-    while(pinfo.state() != libcow::progress_info::downloading && 
-          pinfo.state() != libcow::progress_info::seeding     && 
-          pinfo.state() != libcow::progress_info::finished)
-    {
-        std::cout << "waiting for libtorrent: "
-                  << pinfo.state_str() << std::endl;
-        libcow::system::sleep(1000);
-        pinfo = ctrl->get_progress();
+    // test get_active_downloads
+    std::list<libcow::download_control*> active_downloads 
+        = client.get_active_downloads();
+
+    assert(active_downloads.size() == 0);
+
+    std::cout << "starting download" << std::endl;
+    libcow::download_control* ctrl = client.start_download(prog_table.at(2));
+
+    if(!ctrl) {
+        std::cout << "start_download returned null" << std::endl;
+        return 1;
     }
 
+    ctrl->set_piece_finished_callback(piece_finished_callback);
+
+    ctrl->invoke_after_init(boost::bind(invoked_after_init));
+
+    boost::unique_lock<boost::mutex> lock(mutex);
+    cond.wait(lock);
+
+    std::vector<int> must_have;
+    must_have.push_back(1);
+    must_have.push_back(2);
+    must_have.push_back(5);
+
+    ctrl->invoke_when_downloaded(must_have, boost::bind(got_wanted_pieces));
 
     std::cout << "testing blocking read...." << std::endl;
 
@@ -114,40 +147,62 @@ int main(int argc, char* argv[])
     std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
-    
-    for(int i = 0; i < 2; ++i) {
-        libcow::progress_info progress_info = ctrl->get_progress();
-        std::cout << "State: " << progress_info.state_str() 
-            << ", Progress: " << (progress_info.progress() * 100.0) 
-            << "%" << std::endl;
-        libcow::system::sleep(1000);
-    }
 
-    std::cout << "critial window: " << ctrl->critical_window() << std::endl;
+    for(size_t i = 0; i < 10; ++i) {
+ 
+        //ctrl->debug_print();
 
-    for(size_t i = 0; i < 1000000; ++i) {
-        ctrl->debug_print();
-        libcow::progress_info progress_info = ctrl->get_progress();
-        std::cout << "State: " << progress_info.state_str() 
-            << ", Progress: " << (progress_info.progress() * 100.0) 
-            << "%" << std::endl;
-        
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;
         ctrl->set_playback_position(playback_pos);
         libcow::system::sleep(250);
         playback_pos += 64;
         ctrl->set_playback_position(playback_pos);
-        libcow::system::sleep(250);
+        libcow::system::sleep(150);
         playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(50);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(10);
+    }
+
+    // test get_active_downloads
+    active_downloads 
+        = client.get_active_downloads();
+
+    assert(active_downloads.size() == 1);
+    assert(active_downloads.front() == ctrl);
+
+    // make sure that this stupid move just gives us a pointer to
+    // the already started download
+    ctrl = client.start_download(prog_table.at(2));
+
+    ctrl->unset_piece_finished_callback();
+
+    for(size_t i = 11; i <= 15; ++i) {
+ 
+        //ctrl->debug_print();
+
+        size_t playback_pos = i*256*1024;
+        std::cout << "setting playback position to " << playback_pos << std::endl;
         ctrl->set_playback_position(playback_pos);
         libcow::system::sleep(250);
         playback_pos += 64;
         ctrl->set_playback_position(playback_pos);
-        libcow::system::sleep(250);
+        libcow::system::sleep(150);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(50);
+        playback_pos += 64;
+        ctrl->set_playback_position(playback_pos);
+        libcow::system::sleep(10);
     }
 
     client.remove_download(ctrl);
 
+    // should give a warning in the log, but not crash
+    client.remove_download(ctrl);
+    
     return 0;
 }

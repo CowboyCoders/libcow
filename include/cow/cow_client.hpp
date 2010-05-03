@@ -34,8 +34,10 @@ or implied, of CowboyCoders.
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/thread/future.hpp>
 
-#include "cow/download_device_manager.hpp"
+#include "cow/dispatcher.hpp"
+#include "cow/cow_client_worker.hpp"
 
 namespace libcow {    
 
@@ -80,30 +82,39 @@ namespace libcow {
         * @param program The the program to start downloading.
         * @return A pointer to the download_control used for this program.
         */
-        download_control* start_download(const libcow::program_info& program);
+        download_control* start_download(const libcow::program_info& program)
+        {
+            boost::promise<download_control*> promise;
+            boost::unique_future<download_control*> future = promise.get_future();
+
+            worker_->start_download(promise, program, download_directory_);
+            future.wait();
+            return future.get();
+        }
 
        /**
         * This function returns a list of all active libcow::download_controls.
         * @return A list of libcow::download_control pointers for all active downloads..
         */
-        const std::list<download_control*>& get_active_downloads() const;
+        std::list<download_control*> get_active_downloads() const
+        {
+            boost::promise<std::list<download_control*> > promise;
+            boost::unique_future<std::list<download_control*> > future = promise.get_future();
+
+            worker_->get_active_downloads(promise);
+            future.wait();
+            return future.get();
+        }
 
        /**
         * This function will stop the download of the specified program, and
         * erase the associated download_control.
         * @param download A pointer to the download_control instance.
         */
-        void remove_download(download_control* download);
-
-       /**
-        * This function starts the logger for this class in a new thread.
-        */
-		void start_logger();
-
-       /**
-        * This function stops the logger for this class.
-        */
-		void stop_logger();
+        void remove_download(download_control* download)
+        {
+            worker_->remove_download(download);
+        }
 
        /**
         * This function registers a new download_device_factory which can be used
@@ -112,34 +123,25 @@ namespace libcow {
         * @param identifier A string describing the download_device, e.g. "http", "multicast" etc.
         */
         void register_download_device_factory(boost::shared_ptr<download_device_factory> factory, 
-                                              const std::string& identifier); 
+                                              const std::string& identifier)
+        {
+            worker_->register_download_device_factory(factory, identifier);
+        }
 
     private:
-        libtorrent::torrent_handle create_torrent_handle(const properties& props);
-        download_control* torrent_handle_to_download_control(const libtorrent::torrent_handle& handle); 
-        void logger_thread_function();
-        bool exit_logger_thread();
+        void alert_thread_function();
+        void stop_alert_thread();
+        void handle_stop_alert_thread();
 
-        typedef std::vector<download_control*> download_control_vector;
-        download_control_vector download_controls_;
+        cow_client_worker* worker_;
 
-        boost::mutex download_controls_mutex_;
-        
-        download_device_manager dd_manager_;
+        dispatcher* alert_disp_;
+
+        bool alert_thread_running_;
+
+        std::string download_directory_;
+
         libtorrent::session session_;
-        std::string download_directory_;             
-    
-		boost::shared_ptr<boost::thread> logger_thread_ptr_;
-        bool logger_thread_running_;
-        boost::mutex logger_mutex_;
-
-        size_t max_num_log_messages_;
-        int logging_interval_;
-
-        static const int default_max_num_log_messages_;
-        static const int default_logging_interval_;
-        int download_device_id_;
-        std::map<int,std::string> piece_sources_;
 	};
 
     /** \example basic_example.cpp

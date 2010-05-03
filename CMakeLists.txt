@@ -52,9 +52,12 @@ set(PACKETIZER_SOURCE_DIR ${LIBCOW_SOURCE_DIR}/../packetizer/src)
 
 set(LIBCOW_SOURCE
     ${LIBCOW_SOURCE_DIR}/src/cow_client.cpp
+    ${LIBCOW_SOURCE_DIR}/src/cow_client_worker.cpp
     ${LIBCOW_SOURCE_DIR}/src/curl_instance.cpp
     ${LIBCOW_SOURCE_DIR}/src/dispatcher.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_control.cpp
+    ${LIBCOW_SOURCE_DIR}/src/download_control_event_handler.cpp
+    ${LIBCOW_SOURCE_DIR}/src/download_control_worker.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_device.cpp
     ${LIBCOW_SOURCE_DIR}/src/download_device_manager.cpp
     ${LIBCOW_SOURCE_DIR}/src/multicast_server_connection.cpp
@@ -74,9 +77,12 @@ set(LIBCOW_HEADERS
     ${LIBCOW_SOURCE_DIR}/include/cow/cow.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/libcow_types.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/cow_client.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/cow_client_worker.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/curl_instance.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/dispatcher.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_control.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/download_control_event_handler.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/download_control_worker.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_device.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_device_description.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/download_device_factory.hpp
@@ -161,10 +167,10 @@ IF(WIN32)
     add_definitions(
         -DCURL_STATICLIB 
         -DBOOST_ALL_NO_LIB
-        -DTORRENT_BUILDING_SHARED
-        -DTORRENT_DEBUG
-        -DTORRENT_DISABLE_GEO_IP
-        -DTORRENT_DISABLE_INVARIANT_CHECKS
+        -DTORRENT_BUILDING_SHARED 
+        -DTORRENT_DISABLE_GEO_IP 
+        -DTORRENT_DISABLE_INVARIANT_CHECKS 
+        -DTORRENT_USE_TOMMATH
     )
 ENDIF(WIN32)
 

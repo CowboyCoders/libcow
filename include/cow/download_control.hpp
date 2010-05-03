@@ -31,6 +31,8 @@ or implied, of CowboyCoders.
 
 #include "cow/utils/buffer.hpp"
 #include "cow/dispatcher.hpp"
+#include "cow/download_control_event_handler.hpp"
+#include "cow/download_control_worker.hpp"
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
@@ -65,13 +67,6 @@ namespace libcow {
                          int id);
         ~download_control();
 
-       /**
-        * Creates a new progress_info struct which contains information about
-        * the current download progress.
-        * @return A progress_info struct with information.
-        */
-        progress_info get_progress();
-
         /**
          * @return The number of pieces in the torrent associated with this
          * download_control.
@@ -86,7 +81,10 @@ namespace libcow {
         * are downloaded by requesting them from a random access download device.
         * @param requests A vector of requests to download.
         */
-        void pre_buffer(const std::vector<libcow::piece_request> requests);
+        void pre_buffer(const std::vector<libcow::piece_request>& requests)
+        {
+            worker_->pre_buffer(requests);
+        }
 
         /**
         * This function returns the total file size of the downloaded data.
@@ -117,15 +115,6 @@ namespace libcow {
         * @return True if the data has been downloaded, otherwise false.
         */
         bool has_data(size_t offset, size_t length);
-
-        /**
-         * This function checks wether the supplied pieces are downloaded 
-         * and returns a vector of the pieces which aren't.
-         *
-         * @param pieces The pieces for which the availability shoud be checked for
-         * @return a vector that contatins the pieces which aren't downloaded 
-         */
-        std::vector<int> has_pieces(const std::vector<int>& pieces);
         
         /**
          * The number of sequential bytes available from 
@@ -153,7 +142,9 @@ namespace libcow {
          * @param offset The byte offset of the current playback position.
          * @param force_request Allow possibly redundant requests.
          */
-        void set_playback_position(size_t offset, bool force_request = false);
+        void set_playback_position(size_t offset, bool force_request = false) {
+            worker_->set_playback_position(offset, force_request);
+        }
 
        /**
         * Returns the length of a piece.
@@ -170,20 +161,6 @@ namespace libcow {
         void add_pieces(int id, const std::vector<libcow::piece_data>& pieces);
 
        /**
-        * Sets the download device origin for a piece. Since this may happen at any time,
-        * this function MUST be called in a threadsafe manner.
-        * @param source The unique id of the source. 0 = default(BitTorrent).
-        * @param piece_index The index of the piece to set the source for.
-        */
-        void set_piece_src(int source, size_t piece_index) {
-            if(piece_index < piece_origin_.size() &&
-                piece_origin_[piece_index] == 0)
-            {
-                piece_origin_[piece_index] = source;
-            }
-        }
-
-       /**
         * This function adds a download_device to the vector of download devices
         * that this download_control keeps track of.
         * @param dd The download_device to add.
@@ -192,13 +169,17 @@ namespace libcow {
 
         /**
          * The supplied boost::function callback will be called when all the bittorrent pieces in 
-         * the supplied std::vector pieces are downloaded. Note that this function is 
+         * the supplied std::vector 'pieces' are downloaded. Note that this function is 
          * asynchronous (not blocking)
          *
          * @param callback The function to call when all the pieces are downloaded
-         * @param pieces A vector describing which pieces that should be downloaded
+         * @param pieces A vector describing which pieces should be downloaded
          */
-        void wait_for_pieces(const std::vector<int>& pieces, boost::function<void(std::vector<int>)> callback);
+        void invoke_when_downloaded(const std::vector<int>& pieces, 
+                                    boost::function<void(std::vector<int>)> callback)
+        {
+            event_handler_->invoke_when_downloaded(pieces, callback);
+        }
         
         /**
          * The supplied boost::function callback will be called when the download_control is intitialized and ready.
@@ -207,31 +188,36 @@ namespace libcow {
          *
          * @param callback The function to call when all the pieces are downloaded
          */
-        void wait_for_startup(boost::function<void(void)> callback);
-
-        /**
-         * HENRY, document this!
-         */
-        int critical_window()
+        void invoke_after_init(boost::function<void(void)> callback) 
         {
-            return critical_window_;
+            event_handler_->invoke_after_init(callback);
         }
 
         /**
-         * HENRY, document this!
+         * Sets the number of consecutive pieces, starting with the piece at the
+         * current playback position, that should be prioritized for downloading.
+         *
+         * @param num_pieces The length, int pieces, of the critical window
          */
         void set_critical_window(int num_pieces)
         {
-            critical_window_ = num_pieces;
+            worker_->set_critical_window(num_pieces);
         }
 
         /**
-         * Checks wether the download_controller is downloading and 
-         * sharing data or not.
-         *
-         * @return true if the download_controller is active, otherwise false
-         */
-        bool is_running();
+        * Adds a function to be called when new pieces are added.
+        * @param func A callback function of type void(int).
+        */
+        void set_piece_finished_callback(const boost::function<void(int)>& func) {
+            event_handler_->set_piece_finished_callback(func);
+        }
+
+        /**
+        * Removes a 'piece added' callback.
+        * @param func A callback function of type void(int).
+        */
+        void unset_piece_finished_callback() {
+            event_handler_->unset_piece_finished_callback();
         
         /**
          * Prints useful debug information
@@ -250,62 +236,28 @@ namespace libcow {
         }
 
     private:
-        void fetch_missing_pieces(download_device* dev, 
-                                  int first_piece, 
-                                  int last_piece,
-                                  bool force_request,
-                                  boost::system::error_code& error);
+        void signal_startup_complete() {
+            event_handler_->signal_startup_complete();
+        }
         
-        // used by cow_client when a new libtorrent::alert arrives.
-        // this is possible since cow_client is friend
-        // with download_control. we don't want to make this public.
-        void handle_alert(const libtorrent::alert* event);
+        void signal_piece_finished(int piece_index) {
+            event_handler_->signal_piece_finished(piece_index);
+        }
 
-        void update_piece_requests(int piece_id);
-        void signal_startup_callbacks();
-        
-        class piece_request
-        {
-        public:
-            typedef boost::function<void(std::vector<int>)> callback;
-            
-            piece_request(std::list<int>* pieces, callback func, std::vector<int>* org_pieces)
-                : pieces_(pieces),
-                  callback_(func),
-                  org_pieces_(org_pieces) {} // empty
-            
-            std::list<int>* pieces_;
-            callback callback_;
-            std::vector<int>* org_pieces_;
-        };
-        
-        std::multimap<int, piece_request> piece_nr_to_request_;
-        
-        std::vector<boost::function<void(void)> > startup_complete_callbacks_;
+        download_control_event_handler* event_handler_;
+        download_control_worker* worker_;
 
-        std::map<int,std::string> * piece_sources_;
-        std::vector<int> piece_origin_;
+        void set_piece_src(int source, size_t piece_index) {
+            event_handler_->set_piece_src(source, piece_index);
+        }
+
         libtorrent::torrent_handle handle_;
-
-        std::vector<boost::shared_ptr<download_device> > download_devices_;
 
         std::ifstream file_handle_;
 
-        dispatcher download_disp_;
-        dispatcher alert_disp_;
+        int id_;
 
-        int critical_window_;
-        std::vector<bool> critically_requested_;
-        
-        bool is_libtorrent_ready_;
-        boost::mutex libtorrent_ready_mutex_;
-        boost::mutex startup_callback_mutex_;
-        boost::mutex map_mutex_; 
-        int id_; 
-
-        // cow_client should have access to the torrent_handle
-        friend class libcow::cow_client;
-
+        friend class cow_client_worker;
     };
 }
 
