@@ -48,16 +48,26 @@ cow_client_worker::~cow_client_worker()
     clear_download_controls();
 }
 
-void cow_client_worker::start_download(boost::promise<download_control*>& promise,
-                                       const program_info& program,
+download_control* cow_client_worker::start_download(const program_info& program,
                                        const std::string& download_directory)
 {
-    disp_->post(boost::bind(
-        &cow_client_worker::handle_start_download, this, boost::ref(promise), program, download_directory));
+    boost::function<download_control*()> functor
+        = boost::bind<download_control*>(&cow_client_worker::handle_start_download, 
+                                         this, 
+                                         program, 
+                                         download_directory);
+
+    boost::packaged_task<download_control*> task(functor);
+    boost::unique_future<download_control*> future = task.get_future();
+
+    disp_->post(boost::bind(&boost::packaged_task<download_control*>::operator(), 
+                boost::ref(task)));
+    
+    future.wait();
+    return future.get();
 }
 
-void cow_client_worker::handle_start_download(boost::promise<download_control*>& promise,
-                                              const program_info& program,
+download_control* cow_client_worker::handle_start_download(const program_info& program,
                                               const std::string& download_directory)
 {
     // begin by checking if this download_control is already active
@@ -66,8 +76,7 @@ void cow_client_worker::handle_start_download(boost::promise<download_control*>&
     for(it = download_controls_.begin(); it != download_controls_.end(); ++it) {
         download_control* dc = *it;
         if(dc->id() == program.id) {
-            promise.set_value(dc);
-            return;
+            return dc;
         }
     }
 
@@ -76,8 +85,7 @@ void cow_client_worker::handle_start_download(boost::promise<download_control*>&
 
     if (device_it == program.download_devices.end()) {
         BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to start download because the program does not have a torrent download device.";
-        promise.set_value(0);
-        return;
+        return 0;
     }
 
     // Fetch properties for the torrent device 
@@ -89,8 +97,7 @@ void cow_client_worker::handle_start_download(boost::promise<download_control*>&
     // Make sure the handle is valid
     if (!torrent.is_valid()) {
         BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create torrent handle.";
-        promise.set_value(0);
-        return;
+        return 0;
     }
 
     // Create a new download_control
@@ -140,7 +147,7 @@ void cow_client_worker::handle_start_download(boost::promise<download_control*>&
 
     download_controls_.push_back(download);
     download_control_for_torrent[torrent] = download;
-    promise.set_value(download);
+    return download;
 }
 
 void cow_client_worker::remove_download(download_control* download)
@@ -284,13 +291,22 @@ void cow_client_worker::handle_signal_startup_complete(const libtorrent::torrent
     }
 }
 
-void cow_client_worker::get_active_downloads(boost::promise<std::list<download_control*> >& promise)
+std::list<download_control*> cow_client_worker::get_active_downloads()
 {
-    disp_->post(boost::bind(
-        &cow_client_worker::handle_get_active_downloads, this, boost::ref(promise)));
+    boost::function<std::list<download_control*>()> functor
+    = boost::bind<std::list<download_control*> >(&cow_client_worker::handle_get_active_downloads, this);
+
+    boost::packaged_task<std::list<download_control*> > task(functor);
+    boost::unique_future<std::list<download_control*> > future = task.get_future();
+
+    disp_->post(boost::bind(&boost::packaged_task<std::list<download_control*> >::operator(), 
+                boost::ref(task)));
+    
+    future.wait();
+    return future.get();
 }
 
-void cow_client_worker::handle_get_active_downloads(boost::promise<std::list<download_control*> >& promise)
+std::list<download_control*> cow_client_worker::handle_get_active_downloads()
 {
     std::list<download_control*> active_downloads;
     download_control_vector::iterator iter;
@@ -298,5 +314,5 @@ void cow_client_worker::handle_get_active_downloads(boost::promise<std::list<dow
     {
         active_downloads.push_back(*iter);
     }
-    promise.set_value(active_downloads);
+    return active_downloads;
 }

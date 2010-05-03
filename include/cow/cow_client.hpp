@@ -84,12 +84,7 @@ namespace libcow {
         */
         download_control* start_download(const libcow::program_info& program)
         {
-            boost::promise<download_control*> promise;
-            boost::unique_future<download_control*> future = promise.get_future();
-
-            worker_->start_download(promise, program, download_directory_);
-            future.wait();
-            return future.get();
+            return worker_->start_download(program, download_directory_);
         }
 
        /**
@@ -101,9 +96,7 @@ namespace libcow {
             boost::promise<std::list<download_control*> > promise;
             boost::unique_future<std::list<download_control*> > future = promise.get_future();
 
-            worker_->get_active_downloads(promise);
-            future.wait();
-            return future.get();
+            return worker_->get_active_downloads();
         }
 
        /**
