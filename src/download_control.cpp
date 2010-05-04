@@ -122,9 +122,19 @@ bool download_control::has_data(size_t offset, size_t length)
     
 	size_t piece_start = offset / piece_size;
 	size_t piece_end = (offset + length - 1) / piece_size;
+    if((int) piece_end >= info.num_pieces()) {
+        piece_end = info.num_pieces() - 1;
+    }
 
-    if ((int)piece_end >= info.num_pieces() || (int)piece_start >= info.num_pieces()){
+    if ((int)piece_start >= info.num_pieces()) {
+        BOOST_LOG_TRIVIAL(warning) << "piece out of range";
+        BOOST_LOG_TRIVIAL(warning) << "piece_start: " << piece_start << " piece_end: " << piece_end;
+        BOOST_LOG_TRIVIAL(warning) << "num_pieces: " << info.num_pieces();
+        BOOST_LOG_TRIVIAL(warning) << "piece_size: " << piece_size;
+        BOOST_LOG_TRIVIAL(warning) << "length: " << length;
+        BOOST_LOG_TRIVIAL(warning) << "offset: " << offset;
         throw std::out_of_range("has_data: piece index out of range");
+        //return false;
 	}
 
     libtorrent::torrent_status status = handle_.status();
