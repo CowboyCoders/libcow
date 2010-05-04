@@ -256,8 +256,15 @@ void download_control_event_handler::handle_set_piece_finished_callback(const bo
 
 void download_control_event_handler::unset_piece_finished_callback()
 {
-    disp_->post(boost::bind(
-        &download_control_event_handler::handle_unset_piece_finished_callback, this));
+    boost::function<void()> functor = 
+    boost::bind(&download_control_event_handler::handle_unset_piece_finished_callback, this);
+    boost::packaged_task<void> task(functor);
+    boost::unique_future<void> future = task.get_future();
+
+    disp_->post(boost::bind(&boost::packaged_task<void>::operator(), 
+                boost::ref(task)));
+    future.wait();
+    return;
 }
 
 void download_control_event_handler::handle_unset_piece_finished_callback()
