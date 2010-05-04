@@ -73,15 +73,7 @@ namespace libcow
         * @return True if it was possible to retrieve the piece_origins,
         * otherwise false.
         */
-        bool current_state(std::vector<int>& state);
-
-       /** 
-        * Fills the specified vector with piece_origin data and calls the specified
-        * callback function. This function is asynchronous.
-        * @param state The vector to fill with data.
-        * @param callback The callback function to call after retrieving the piece_origins.
-        */
-        void current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
+        bool get_current_state(std::vector<int>& state);
     private:
         class piece_request
         {
@@ -104,8 +96,7 @@ namespace libcow
                                            boost::function<void(std::vector<int>)> callback);
         void handle_set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void handle_unset_piece_finished_callback();
-        bool handle_current_state(std::vector<int>& state);
-        void handle_async_current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
+        bool handle_get_current_state(std::vector<int>& state);
         void signal_startup_callbacks();
         void set_libtorrent_ready();
         void update_piece_requests(int piece_id);

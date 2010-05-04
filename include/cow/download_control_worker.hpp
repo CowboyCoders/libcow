@@ -56,17 +56,17 @@ namespace libcow
 
 
        /**
-        * Returns a list of the current active downloads. This function is blocking.
-        * @return A list of libcow::download_control pointers to the current active downloads.
+        * Returns a map from download_device id to the name of the download_device.
+        * @return the map
         */
-        void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
+        std::map<int,std::string> get_device_names();
 
     private:
         void handle_set_critical_window(int num_pieces);
         void handle_add_download_device(download_device* dd, int id, std::string name);
         void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
-        void handle_get_device_names(boost::function<void(std::map<int,std::string>)> callback);
+        std::map<int,std::string> handle_get_device_names();
         
         void fetch_missing_pieces(download_device* dev,
                                   int first_piece,

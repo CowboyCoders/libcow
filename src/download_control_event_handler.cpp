@@ -41,10 +41,10 @@ void download_control_event_handler::handle_set_piece_src(int source, size_t pie
     }
 }
 
-bool download_control_event_handler::current_state(std::vector<int>& state)
+bool download_control_event_handler::get_current_state(std::vector<int>& state)
 {
     boost::function<bool()> functor = 
-        boost::bind(&download_control_event_handler::handle_current_state,
+        boost::bind(&download_control_event_handler::handle_get_current_state,
                     this,
                     boost::ref(state));
     boost::packaged_task<bool> task(functor);
@@ -56,36 +56,12 @@ bool download_control_event_handler::current_state(std::vector<int>& state)
     return future.get();
 }
         
-void download_control_event_handler::current_state(std::vector<int>* state, 
-                                                   boost::function<void(std::vector<int>*)> callback)
+bool download_control_event_handler::handle_get_current_state(std::vector<int>& state)
 {
-    disp_->post(boost::bind(&download_control_event_handler::handle_async_current_state,
-                            this,
-                            state,
-                            callback));
-}
-
-void download_control_event_handler::handle_async_current_state(std::vector<int>* state,
-                                                                boost::function<void(std::vector<int>*)> callback)
-{
-    std::vector<int>::const_iterator sources_iter;
-    for(sources_iter = piece_origin_.begin();
-        sources_iter != piece_origin_.end();
-        ++sources_iter) 
-    {
-        state->push_back(*sources_iter);
-    }
-    callback(state);
-}
-
-bool download_control_event_handler::handle_current_state(std::vector<int>& state)
-{
-    std::vector<int>::const_iterator sources_iter;
-    for(sources_iter = piece_origin_.begin();
-        sources_iter != piece_origin_.end();
-        ++sources_iter) 
-    {
-        state.push_back(*sources_iter);
+    state.resize(piece_origin_.size(),0);
+    for(size_t idx = 0; idx < state.size(); ++idx) {
+    
+        state[idx] = piece_origin_[idx];
     }
     return true;
 }

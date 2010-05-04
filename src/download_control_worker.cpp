@@ -97,17 +97,24 @@ void download_control_worker::set_playback_position(size_t offset, bool force_re
         &download_control_worker::handle_set_playback_position, this, offset, force_request));
 }
         
-void download_control_worker::get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+std::map<int,std::string> download_control_worker::get_device_names()
 {
-    disp_->post(boost::bind(&download_control_worker::handle_get_device_names,
-                            this,
-                            callback));
+    boost::function<std::map<int,std::string>()> functor =
+        boost::bind(&download_control_worker::handle_get_device_names,
+                    this);
+    boost::packaged_task<std::map<int,std::string> > task(functor);
+    boost::unique_future<std::map<int,std::string> > future = task.get_future();
+
+    disp_->post(boost::bind(&boost::packaged_task<std::map<int,std::string> >::operator(),
+                            boost::ref(task))); 
+    future.wait();
+    return future.get();
 
 }
 
-void download_control_worker::handle_get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+std::map<int,std::string> download_control_worker::handle_get_device_names()
 {
-    callback(device_names_);
+    return device_names_;
 }
 
 void download_control_worker::handle_set_playback_position(size_t offset, bool force_request)

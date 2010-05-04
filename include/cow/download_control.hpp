@@ -244,21 +244,13 @@ namespace libcow {
         * @return True if it was possible to retrieve the piece_origins,
         * otherwise false.
         */
-        bool current_state(std::vector<int>& state);
-
-       /** 
-        * Fills the specified vector with piece_origin data and calls the specified
-        * callback function. This function is asynchronous.
-        * @param state The vector to fill with data.
-        * @param callback The callback function to call after retrieving the piece_origins.
-        */
-        void current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
+        bool get_current_state(std::vector<int>& state);
 
        /**
-        * Sends a map<int,string> of device names to the specified callback.
-        * @param callback The callback function to call with the device names.
+        * Returns a map from download_device id to the name of the download_device.
+        * @return the map
         */
-        void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
+        std::map<int,std::string> get_device_names();
 
     private:
         void signal_startup_complete() {

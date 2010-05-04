@@ -233,7 +233,7 @@ void on_demand_server_connection::worker(std::string connection_str,
 
 
     if(res != CURLE_OK) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
+        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: curl_easy_setopt: "
                 << curl_easy_strerror(res);
         return;
     }
@@ -241,7 +241,7 @@ void on_demand_server_connection::worker(std::string connection_str,
     res = curl_easy_perform(curl_ptr->curl);
 
     if(res != CURLE_OK) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
+        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: curl_easy_perform error: "
                 << curl_easy_strerror(res);
         return;
     }

@@ -232,19 +232,14 @@ size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
     return static_cast<size_t>(file_handle_.gcount());
 }
         
-bool download_control::current_state(std::vector<int>& state)
+bool download_control::get_current_state(std::vector<int>& state)
 {
-    return event_handler_->current_state(state);
-}
-
-void download_control::current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback)
-{
-    return event_handler_->current_state(state,callback);
+    return event_handler_->get_current_state(state);
 }
         
-void download_control::get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+std::map<int,std::string> download_control::get_device_names()
 {
-    worker_->get_device_names(callback);
+    return worker_->get_device_names();
 }
 
 size_t download_control::file_size() const

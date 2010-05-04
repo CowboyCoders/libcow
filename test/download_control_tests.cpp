@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     cond.wait(lock);
     
     std::vector<int> state;
-    ctrl->current_state(state);
+    ctrl->get_current_state(state);
 
     std::vector<int>::iterator it;
     std::cout << "CURRENT STATE" << std::endl;
@@ -135,7 +135,8 @@ int main(int argc, char* argv[])
     must_have.push_back(2);
     must_have.push_back(5);
     
-    ctrl->get_device_names(print_device_map);
+    std::map<int,std::string> dmap = ctrl->get_device_names();
+    print_device_map(dmap);
 
     ctrl->invoke_when_downloaded(must_have, boost::bind(got_wanted_pieces));
 
