@@ -72,8 +72,7 @@ namespace libcow {
         * This function sets which port to use for BitTorrent connections.
         * @param port The port to use.
         */
-        void set_bittorrent_port(int port);
-       
+        void set_bittorrent_port(int port);     
         
        /**
         * This function will start downloading the selected program using BitTorrent.

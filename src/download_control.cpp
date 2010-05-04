@@ -194,8 +194,7 @@ std::string download_control::filename() const
 {
     assert(handle_.get_torrent_info().files().num_files() == 1);
     
-    libtorrent::file_entry file_entry = handle_.get_torrent_info().files().at(0);
-    return file_entry.path;
+    return handle_.get_torrent_info().file_at(0).path;
 }
 
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
