@@ -38,6 +38,8 @@ namespace libcow
 {
     /**
      * Performs a HTTP GET request.
+     * @param url The url to get data from.
+     * @param timeout The timeout in seconds to wait.
      */
     LIBCOW_EXPORT std::string http_get_as_string(const std::string& url, size_t timeout);
 
@@ -128,7 +130,11 @@ namespace libcow
         CURL *curl;
 
        /**
-        * libcurl callback function.
+        * Creates several smaller buffers from a big buffer.
+        * @param buffer The smaller buffer.
+        * @param size The size of the buffer.
+        * @param nmemb The number of buffers.
+        * @param userp The bigger buffer containing all data.
         */
         static size_t write_data(void * buffer,
                                  size_t size,

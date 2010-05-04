@@ -164,6 +164,8 @@ namespace libcow {
         * This function adds a download_device to the vector of download devices
         * that this download_control keeps track of.
         * @param dd The download_device to add.
+        * @param id The unique id of the device.
+        * @param name The name of the device.
         */
         void add_download_device(download_device* dd, int id, std::string name);
 
@@ -197,7 +199,7 @@ namespace libcow {
          * Sets the number of consecutive pieces, starting with the piece at the
          * current playback position, that should be prioritized for downloading.
          *
-         * @param num_pieces The length, int pieces, of the critical window
+         * @param num_pieces The length, in pieces, of the critical window
          */
         void set_critical_window(int num_pieces)
         {
@@ -235,9 +237,27 @@ namespace libcow {
             return id_;
         }
 
+       /**
+        * Fills the specified vector with piece_origin data. This function
+        * is blocking.
+        * @param state The vector to fill with data.
+        * @return True if it was possible to retrieve the piece_origins,
+        * otherwise false.
+        */
         bool current_state(std::vector<int>& state);
+
+       /** 
+        * Fills the specified vector with piece_origin data and calls the specified
+        * callback function. This function is asynchronous.
+        * @param state The vector to fill with data.
+        * @param callback The callback function to call after retrieving the piece_origins.
+        */
         void current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
 
+       /**
+        * Sends a map<int,string> of device names to the specified callback.
+        * @param callback The callback function to call with the device names.
+        */
         void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
 
     private:

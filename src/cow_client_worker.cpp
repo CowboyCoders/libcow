@@ -7,13 +7,28 @@
 
 using namespace libcow;
 
+/**
+ * This struct is used for comparing a pair on its second value.
+ */
 template <typename T>
 struct match_second 
 {
+   /**
+    * The local value to compare with.
+    */
     T val;
 
+   /**
+    * Create a new match_second struct to compare values with.
+    * @param t The local value to compare with.
+    */
     match_second(T const & t) : val (t) {}
 
+   /**
+    * Compares a pair.
+    * @param p The pair to compare.
+    * @return True if the second value compares with the local value.
+    */
     template <typename Pair>
     bool operator() (Pair const& p) const
     {
@@ -21,13 +36,29 @@ struct match_second
     }
 };
 
+/**
+ * A struct that can be used for comparing pointer
+ * values.
+ */
 template <typename T>
 struct check_pointer_value
 {
+   /**
+    * The local value to compare to. 
+    */
     T* val;
 
+   /**
+    * Creates a new check_pointer_value struct for comparing.
+    * @param t The value to store locally for comparing.
+    */
     check_pointer_value(T* t) : val(t) {}
 
+   /**
+    * Compare two pointer values.
+    * @param x A pointer to the value to compare with.
+    * @return True if the values are equal, otherwise false.
+    */
     bool operator() (T* x) const
     {
         return x == val;

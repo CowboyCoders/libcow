@@ -8,18 +8,57 @@ namespace libcow
     class download_device;
     class dispatcher;
 
+   /**
+    * This class is responsible for carrying out jobs for the
+    * libcow::download_control.
+    */
     class download_control_worker
     {
     public:
+        
+       /**
+        * Creates a new download_control_worker.
+        * @param h The torrent_handle that this worker belongs to.
+        * @param critical_window_length The number of pieces that are critical to download.
+        * @param critical_window_timeout The timeout in seconds to use for dispatcher jobs.
+        */
         download_control_worker(libtorrent::torrent_handle& h,
                                 int critical_window_length,
                                 int critical_window_timeout);
         ~download_control_worker();
 
+       /**
+        * Sets the number of pieces that are critical to download.
+        * @param num_pieces The number of critical pieces.
+        */
         void set_critical_window(int num_pieces);
+
+       /**
+        * Adds a new download_device.
+        * @param dd A pointer to the download_device.
+        * @param name The name of the download_device.
+        */
         void add_download_device(download_device* dd, int id, std::string name);
+
+       /**
+        * Tries to download the specified pieces in a fast manner from random access devices.
+        * @param request A vector of piece indices to download.
+        */
         void pre_buffer(const std::vector<int>& requests);
+
+       /**
+        * Sets the current byte position for playing back movies. This function is used to
+        * indicate wich pieces needs to be downloaded soon.
+        * @param offset The current playback position.
+        * @param force_request True if we should request pieces that we already have requested before.
+        */
         void set_playback_position(size_t offset, bool force_request);
+
+
+       /**
+        * Returns a list of the current active downloads. This function is blocking.
+        * @return A list of libcow::download_control pointers to the current active downloads.
+        */
         void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
 
     private:
