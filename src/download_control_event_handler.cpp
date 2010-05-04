@@ -14,8 +14,8 @@ static int bittorrent_source_id = 2;
 static int disk_source_id = 1;
 
 download_control_event_handler::download_control_event_handler(libtorrent::torrent_handle& h)
-    : is_libtorrent_ready_(false),
-      torrent_handle_(h)
+    : torrent_handle_(h),
+      is_libtorrent_ready_(false)
 {
     piece_origin_ = std::vector<int>(torrent_handle_.get_torrent_info().num_pieces(),0);
     disp_ = new dispatcher(0);
@@ -112,7 +112,7 @@ void download_control_event_handler::set_disk_source()
     if(torrent_handle_.is_valid()) {
         if(!torrent_handle_.is_seed()) {
             libtorrent::bitfield pieces = torrent_handle_.status().pieces;
-            for(int i = 0; i < pieces.size(); ++i) {
+            for(size_t i = 0; i < pieces.size(); ++i) {
                 if(pieces[i]) {
                     piece_origin_[i] = disk_source_id;
                 }
@@ -150,7 +150,7 @@ void download_control_event_handler::signal_piece_finished(int piece_index)
         boost::bind(&download_control_event_handler::update_piece_requests, this, piece_index));
     int source;
     
-    if(piece_index < piece_origin_.size()) {
+    if(piece_index < static_cast<int>(piece_origin_.size())) {
         source = piece_origin_[piece_index];
     }
 

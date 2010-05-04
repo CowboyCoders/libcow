@@ -108,9 +108,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
     }
 }
 
-void download_control::add_download_device(download_device* dd)
+void download_control::add_download_device(download_device* dd, int id, std::string name)
 {
-    worker_->add_download_device(dd);
+    worker_->add_download_device(dd,id,name);
 }
 
 bool download_control::has_data(size_t offset, size_t length)
@@ -230,6 +230,11 @@ bool download_control::current_state(std::vector<int>& state)
 void download_control::current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback)
 {
     return event_handler_->current_state(state,callback);
+}
+        
+void download_control::get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+{
+    worker_->get_device_names(callback);
 }
 
 size_t download_control::file_size() const

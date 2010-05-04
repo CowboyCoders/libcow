@@ -165,7 +165,7 @@ namespace libcow {
         * that this download_control keeps track of.
         * @param dd The download_device to add.
         */
-        void add_download_device(download_device* dd);
+        void add_download_device(download_device* dd, int id, std::string name);
 
         /**
          * The supplied boost::function callback will be called when all the bittorrent pieces in 
@@ -238,10 +238,7 @@ namespace libcow {
         bool current_state(std::vector<int>& state);
         void current_state(std::vector<int>* state, boost::function<void(std::vector<int>*)> callback);
 
-        std::map<int,std::string> get_device_names()
-        {
-            return std::map<int,std::string>();
-        }
+        void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
 
     private:
         void signal_startup_complete() {

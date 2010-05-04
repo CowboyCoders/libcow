@@ -55,6 +55,15 @@ void piece_finished_callback(int piece_index, int device)
     std::cout << "Piece finished: " << piece_index << " from device: " << device << std::endl;
 }
 
+void print_device_map(std::map<int,std::string> devices)
+{
+    std::map<int,std::string>::iterator it;
+    for(it = devices.begin(); it != devices.end(); ++it) {
+        std::pair<int,std::string> ele = *it;
+        std::cout << "device with id: " << ele.first << " is called " << ele.second << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     if(argc != 3) {
@@ -125,6 +134,8 @@ int main(int argc, char* argv[])
     must_have.push_back(1);
     must_have.push_back(2);
     must_have.push_back(5);
+    
+    ctrl->get_device_names(print_device_map);
 
     ctrl->invoke_when_downloaded(must_have, boost::bind(got_wanted_pieces));
 

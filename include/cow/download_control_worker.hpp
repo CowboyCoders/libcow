@@ -17,15 +17,17 @@ namespace libcow
         ~download_control_worker();
 
         void set_critical_window(int num_pieces);
-        void add_download_device(download_device* dd);
+        void add_download_device(download_device* dd, int id, std::string name);
         void pre_buffer(const std::vector<int>& requests);
         void set_playback_position(size_t offset, bool force_request);
+        void get_device_names(boost::function<void(std::map<int,std::string>)> callback);
 
     private:
         void handle_set_critical_window(int num_pieces);
-        void handle_add_download_device(download_device* dd);
+        void handle_add_download_device(download_device* dd, int id, std::string name);
         void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
+        void handle_get_device_names(boost::function<void(std::map<int,std::string>)> callback);
         
         void fetch_missing_pieces(download_device* dev,
                                   int first_piece,
@@ -36,6 +38,7 @@ namespace libcow
         std::vector<boost::shared_ptr<download_device> > download_devices_;
 
         std::vector<bool> critically_requested_;
+        std::map<int,std::string> device_names_;
         
         int critical_window_;
 

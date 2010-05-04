@@ -12,12 +12,15 @@ using namespace libcow;
 download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
                                                  int critical_window_length,
                                                  int critical_window_timeout)
-    : torrent_handle_(h),
-      critical_window_(critical_window_length)
+    : critical_window_(critical_window_length),
+      torrent_handle_(h)
 {
     critically_requested_ = 
         std::vector<bool>(torrent_handle_.get_torrent_info().num_pieces(), false);
     disp_ = new dispatcher(critical_window_timeout);
+    device_names_[0] = "missing";
+    device_names_[1] = "disk";
+    device_names_[2] = "bittorrent";
 }
 
 download_control_worker::~download_control_worker()
@@ -37,17 +40,18 @@ void download_control_worker::handle_set_critical_window(int num_pieces)
     critical_window_ = num_pieces;
 }
 
-void download_control_worker::add_download_device(download_device* dd)
+void download_control_worker::add_download_device(download_device* dd, int id, std::string name)
 {
     disp_->post(boost::bind(
-        &download_control_worker::handle_add_download_device, this, dd));
+        &download_control_worker::handle_add_download_device, this, dd, id, name));
 }
 
-void download_control_worker::handle_add_download_device(download_device* dd)
+void download_control_worker::handle_add_download_device(download_device* dd, int id, std::string name)
 {
     boost::shared_ptr<download_device> dd_ptr;
     dd_ptr.reset(dd);
     download_devices_.push_back(dd_ptr);
+    device_names_[id] = name;
 }
 
 void download_control_worker::pre_buffer(const std::vector<int>& requests)
@@ -91,6 +95,19 @@ void download_control_worker::set_playback_position(size_t offset, bool force_re
 {
     disp_->post(boost::bind(
         &download_control_worker::handle_set_playback_position, this, offset, force_request));
+}
+        
+void download_control_worker::get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+{
+    disp_->post(boost::bind(&download_control_worker::handle_get_device_names,
+                            this,
+                            callback));
+
+}
+
+void download_control_worker::handle_get_device_names(boost::function<void(std::map<int,std::string>)> callback)
+{
+    callback(device_names_);
 }
 
 void download_control_worker::handle_set_playback_position(size_t offset, bool force_request)
