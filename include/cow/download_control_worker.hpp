@@ -36,9 +36,8 @@ namespace libcow
        /**
         * Adds a new download_device.
         * @param dd A pointer to the download_device.
-        * @param name The name of the download_device.
         */
-        void add_download_device(download_device* dd, int id, std::string name);
+        void add_download_device(download_device* dd);
 
        /**
         * Tries to download the specified pieces in a fast manner from random access devices.
@@ -63,7 +62,7 @@ namespace libcow
 
     private:
         void handle_set_critical_window(int num_pieces);
-        void handle_add_download_device(download_device* dd, int id, std::string name);
+        void handle_add_download_device(download_device* dd);
         void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
         std::map<int,std::string> handle_get_device_names();
@@ -77,7 +76,6 @@ namespace libcow
         std::vector<boost::shared_ptr<download_device> > download_devices_;
 
         std::vector<bool> critically_requested_;
-        std::map<int,std::string> device_names_;
         
         int critical_window_;
 

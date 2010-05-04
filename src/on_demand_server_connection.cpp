@@ -63,13 +63,14 @@ on_demand_server_connection::~on_demand_server_connection()
 
 }
 
-bool on_demand_server_connection::open(const int id, const properties & settings)
+bool on_demand_server_connection::open(const int id, std::string type, const properties & settings)
 {
     if(is_open_) {
         BOOST_LOG_TRIVIAL(error) << "The device is already open!";
         return false;
     }
     id_ = id;
+    type_ = type;
     std::string address = "";
     size_t port = 0;
     std::string file = "";

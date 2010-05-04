@@ -18,9 +18,6 @@ download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
     critically_requested_ = 
         std::vector<bool>(torrent_handle_.get_torrent_info().num_pieces(), false);
     disp_ = new dispatcher(critical_window_timeout);
-    device_names_[0] = "Not downloaded";
-    device_names_[1] = "HDD";
-    device_names_[2] = "BitTorrent";
 }
 
 download_control_worker::~download_control_worker()
@@ -40,18 +37,17 @@ void download_control_worker::handle_set_critical_window(int num_pieces)
     critical_window_ = num_pieces;
 }
 
-void download_control_worker::add_download_device(download_device* dd, int id, std::string name)
+void download_control_worker::add_download_device(download_device* dd)
 {
     disp_->post(boost::bind(
-        &download_control_worker::handle_add_download_device, this, dd, id, name));
+        &download_control_worker::handle_add_download_device, this, dd));
 }
 
-void download_control_worker::handle_add_download_device(download_device* dd, int id, std::string name)
+void download_control_worker::handle_add_download_device(download_device* dd)
 {
     boost::shared_ptr<download_device> dd_ptr;
     dd_ptr.reset(dd);
     download_devices_.push_back(dd_ptr);
-    device_names_[id] = name;
 }
 
 void download_control_worker::pre_buffer(const std::vector<int>& requests)
@@ -114,7 +110,18 @@ std::map<int,std::string> download_control_worker::get_device_names()
 
 std::map<int,std::string> download_control_worker::handle_get_device_names()
 {
-    return device_names_;
+    std::map<int,std::string> devices;
+    devices[0] = "missing";
+    devices[1] = "hdd";
+    devices[2] = "bittorrent";
+    
+    std::vector<boost::shared_ptr<download_device> >::iterator it;
+    for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
+        download_device* dd = it->get();
+        devices[dd->id()] = dd->type();
+    }
+
+    return devices;
 }
 
 void download_control_worker::handle_set_playback_position(size_t offset, bool force_request)

@@ -46,11 +46,12 @@ namespace libcow {
         * map. Ownership of the returned object is passed to the caller, that is, whoever
         * called this function is responsible for deleting the download_device.
         * @param id The unique id for this device.
+        * @param type The type for this download_device
         * @param pmap A properties map with properties for the download_device.
         * @return A pointer to the newly created download_device.
         * @author crimzor
         */
-        virtual download_device * create(int id, const properties& pmap);
+        virtual download_device * create(int id, std::string type, const properties& pmap);
 
 	};
 }

@@ -166,7 +166,7 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
                         boost::bind(&download_control::add_pieces, download, _1, _2);
 
                     device->set_add_pieces_function(add_pieces_function);      
-                    download->add_download_device(device, device_id, device_type);
+                    download->add_download_device(device); 
                 }
 
             } else {

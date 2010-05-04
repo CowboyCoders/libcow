@@ -47,7 +47,7 @@ download_device* download_device_manager::create_instance(int id, std::string id
    if(it == factories.end()) {
        return 0;
    } else {
-       return it->second.get()->create(id, pmap);
+       return it->second.get()->create(id, ident, pmap);
    }
 }
 

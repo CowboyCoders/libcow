@@ -33,9 +33,9 @@ either expressed or implied, of CowboyCoders.
 
 using namespace libcow;
 
-download_device * multicast_server_connection_factory::create(int id, const properties& pmap)
+download_device * multicast_server_connection_factory::create(int id, std::string type, const properties& pmap)
 {
     download_device* msc = new multicast_server_connection();
-    msc->open(id, pmap);
+    msc->open(id, type, pmap);
     return msc;
 }

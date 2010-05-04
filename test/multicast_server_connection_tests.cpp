@@ -63,7 +63,7 @@ int main()
     settings["packet_size"] = "1024";
     settings["piece_size"] = "262144";
 
-    test_connection.open(1, settings); // It seems that we must open the device before setting the callback
+    test_connection.open(1, "multicast", settings); // It seems that we must open the device before setting the callback
 
     test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1,_2));
 

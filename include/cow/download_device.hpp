@@ -53,10 +53,11 @@ namespace libcow {
         * This function opens the device using the specified settings.
         * This function MUST be called in order to use the device.
         * @param id The unique id for this device.
+        * @param type The type for this download_device
         * @param settings A map of settings in the form of value pairs.
         * @return True if the device could be opened, otherwise false.
         */
-        virtual bool open(const int id, const libcow::properties& settings) = 0;
+        virtual bool open(const int id, std::string type, const libcow::properties& settings) = 0;
 
        /**
         * This function closes the device.
@@ -107,6 +108,20 @@ namespace libcow {
         * @return True if it was possible to get the pieces, otherwise false.
         */
         virtual bool get_pieces(const std::vector<libcow::piece_request> & requests) = 0;
+
+        /**
+         * This function returns the id for this download control.
+         *
+         * @return The id for the device
+         */
+        virtual int id() const = 0;
+
+        /**
+         * This functions returns the description for this download control
+         *
+         * @return A string describing this download device
+         */
+        virtual std::string type() const = 0;
 
     private:
 

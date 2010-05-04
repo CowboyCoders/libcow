@@ -108,9 +108,9 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
     }
 }
 
-void download_control::add_download_device(download_device* dd, int id, std::string name)
+void download_control::add_download_device(download_device* dd)
 {
-    worker_->add_download_device(dd,id,name);
+    worker_->add_download_device(dd);
 }
 
 bool download_control::has_data(size_t offset, size_t length)

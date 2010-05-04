@@ -71,7 +71,7 @@ int main()
     settings["file"] = "big_buck_bunny.mpg";
     settings["max_simultaneous_downloads"] = "3";
 
-    test_connection.open(1, settings);
+    test_connection.open(1, "http", settings);
     print_connection_state(test_connection);
 
     test_connection.set_add_pieces_function(boost::bind(&add_pieces_callback,_1,_2));

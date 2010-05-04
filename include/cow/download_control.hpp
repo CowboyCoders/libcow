@@ -167,7 +167,7 @@ namespace libcow {
         * @param id The unique id of the device.
         * @param name The name of the device.
         */
-        void add_download_device(download_device* dd, int id, std::string name);
+        void add_download_device(download_device* dd);
 
         /**
          * The supplied boost::function callback will be called when all the bittorrent pieces in 

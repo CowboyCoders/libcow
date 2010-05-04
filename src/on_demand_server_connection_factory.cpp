@@ -33,9 +33,9 @@ either expressed or implied, of CowboyCoders.
 
 using namespace libcow;
 
-download_device * on_demand_server_connection_factory::create(int id, const properties& pmap)
+download_device * on_demand_server_connection_factory::create(int id, std::string type, const properties& pmap)
 {
     download_device* osc = new on_demand_server_connection();
-    osc->open(id, pmap);
+    osc->open(id, type, pmap);
     return osc;
 }

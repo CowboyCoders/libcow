@@ -73,13 +73,14 @@ multicast_server_connection::~multicast_server_connection()
         threads[i]->join();
     }
 }
-bool multicast_server_connection::open(const int id, const libcow::properties& settings)
+bool multicast_server_connection::open(const int id, std::string type, const libcow::properties& settings)
 {
     if(is_open_) {
         BOOST_LOG_TRIVIAL(error) << "The device is already open!";
         return false;
     }
     id_ = id;
+    type_ = type;
     std::string listen_addr = "";
     size_t multicast_port = 0;
     size_t packet_size = 0;

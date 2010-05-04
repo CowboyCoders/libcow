@@ -57,10 +57,11 @@ namespace libcow {
          * This function opens the device using the specified settings.
          * This function MUST be called in order to use the device.
          * @param id The unique id for this device.
+         * @param type The type for this download_device
          * @param settings A map of settings in the form of value pairs.
          * @return True if the device could be opened, otherwise false.
          */
-         virtual bool open(const int id, const libcow::properties& settings);
+         virtual bool open(const int id, std::string type, const libcow::properties& settings);
 
          /**
           * This function closes the device.
@@ -111,6 +112,26 @@ namespace libcow {
          * @return True if it was possible to get the pieces, otherwise false.
          */
          virtual bool get_pieces(const std::vector<piece_request> & requests);
+        
+        /**
+         * This function returns the id for this download control.
+         *
+         * @return The id for the device
+         */
+        virtual int id() const
+        {
+            return id_;
+        }
+
+        /**
+         * This functions returns the type for this download control
+         *
+         * @return A string describing the type of this download device
+         */
+        virtual std::string type() const
+        {
+            return type_;
+        }
 
     private:
          properties settings_;
@@ -139,6 +160,7 @@ namespace libcow {
          boost::asio::strand strand_;
          boost::asio::ip::udp::socket socket_;
          int id_;
+         std::string type_;
          boost::asio::ip::udp::endpoint sender_endpoint_;
          std::ofstream file_stream_;
 
