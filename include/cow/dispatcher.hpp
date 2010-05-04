@@ -87,6 +87,11 @@ namespace libcow {
             deadline_timer.async_wait(handler);
         }
 
+        void stop()
+        {
+            io_service.stop();
+        }
+
      private:
 
         // don't reorder these!

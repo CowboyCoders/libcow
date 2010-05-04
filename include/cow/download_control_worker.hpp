@@ -52,6 +52,7 @@ namespace libcow
         * @param force_request True if we should request pieces that we already have requested before.
         */
         void set_playback_position(size_t offset, bool force_request);
+        void set_buffering_state();
 
 
        /**
@@ -72,6 +73,7 @@ namespace libcow
                                   int last_piece,
                                   bool force_request,
                                   boost::system::error_code& error);
+        void handle_set_buffering_state();
 
         std::vector<boost::shared_ptr<download_device> > download_devices_;
 
@@ -82,6 +84,11 @@ namespace libcow
         libtorrent::torrent_handle torrent_handle_;
 
         dispatcher* disp_;
+
+        bool is_running_;
+
+        unsigned int buffering_state_counter_;
+        static unsigned int buffering_state_length_;
     };
 }
 

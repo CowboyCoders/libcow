@@ -220,7 +220,16 @@ namespace libcow {
         */
         void unset_piece_finished_callback() {
             event_handler_->unset_piece_finished_callback();
-        } 
+        }
+
+        /**
+         * Calling this functions is a hint to the download control that
+         * we want pieces fast and don't want to time out before hitting
+         * the random access download devices.
+         */
+        void set_buffering_state() {
+            worker_->set_buffering_state();
+        }
         /**
          * Prints useful debug information
          */
@@ -260,7 +269,6 @@ namespace libcow {
         void signal_piece_finished(int piece_index) {
             event_handler_->signal_piece_finished(piece_index);
         }
-
 
         void set_piece_src(int source, size_t piece_index) {
             event_handler_->set_piece_src(source, piece_index);

@@ -18,12 +18,14 @@ download_control_event_handler::download_control_event_handler(libtorrent::torre
       is_libtorrent_ready_(false)
 {
     piece_origin_ = std::vector<int>(torrent_handle_.get_torrent_info().num_pieces(),0);
+    callback_worker_ = new dispatcher(0);
     disp_ = new dispatcher(0);
 }
 
 download_control_event_handler::~download_control_event_handler()
 {
     delete disp_;
+    delete callback_worker_;
 }
 
 void download_control_event_handler::set_piece_src(int source, size_t piece_index)
@@ -107,7 +109,7 @@ void download_control_event_handler::signal_startup_callbacks()
     set_disk_source();
 
     for(it = startup_complete_callbacks_.begin(); it != startup_complete_callbacks_.end(); ++it) {
-        (*it)();
+        callback_worker_->post(*it);
     }
     startup_complete_callbacks_.clear();
 }
@@ -115,16 +117,20 @@ void download_control_event_handler::signal_startup_callbacks()
 void download_control_event_handler::signal_startup_complete()
 {
     disp_->post(
-        boost::bind(&download_control_event_handler::set_libtorrent_ready, this));
-    disp_->post(
-        boost::bind(&download_control_event_handler::signal_startup_callbacks,this));
+        boost::bind(&download_control_event_handler::handle_signal_startup_complete, this));
+}
+
+void download_control_event_handler::handle_signal_startup_complete()
+{
+    is_libtorrent_ready_ = true;
+    signal_startup_callbacks();
 }
 
 void download_control_event_handler::signal_piece_finished(int piece_index)
 {
     disp_->post(
         boost::bind(&download_control_event_handler::update_piece_requests, this, piece_index));
-    int source;
+    int source = 0;
     
     if(piece_index < static_cast<int>(piece_origin_.size())) {
         source = piece_origin_[piece_index];
@@ -138,11 +144,6 @@ void download_control_event_handler::signal_piece_finished(int piece_index)
     
     disp_->post(
         boost::bind(&download_control_event_handler::invoke_piece_finished_callback, this, piece_index,source));
-}
-
-void download_control_event_handler::set_libtorrent_ready()
-{
-    is_libtorrent_ready_ = true;
 }
 
 void download_control_event_handler::invoke_when_downloaded(const std::vector<int>& pieces, 
@@ -178,7 +179,8 @@ void download_control_event_handler::handle_invoke_when_downloaded(const std::ve
                 torrent_handle_.get_torrent_info().piece_length(), piece_id, 1));
         }
     } else {
-        callback(pieces);
+        callback_worker_->post(
+            boost::bind(callback, pieces));
     }
 }
 
@@ -198,7 +200,8 @@ void download_control_event_handler::update_piece_requests(int piece_id)
             piece_request::callback func = req.callback_;
             delete pieces;
             delete req.org_pieces_;
-            func(org_pieces);
+            callback_worker_->post(
+                boost::bind(func, org_pieces));
         } 
     }
     if(piece_nr_to_request_.find(piece_id) != piece_nr_to_request_.end()) {
@@ -234,7 +237,9 @@ std::vector<int> download_control_event_handler::missing_pieces(const std::vecto
 void download_control_event_handler::invoke_piece_finished_callback(int piece_index,int device)
 {
     if(!piece_finished_callback_.empty()) {
-        piece_finished_callback_(piece_index,device);
+        callback_worker_->post(
+            boost::bind(
+                piece_finished_callback_, piece_index, device));
     }
 }
 

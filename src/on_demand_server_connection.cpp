@@ -60,7 +60,6 @@ on_demand_server_connection::~on_demand_server_connection()
     for(size_t i = 0; i < threads.size(); ++i) {
         threads[i]->join();
     }
-
 }
 
 bool on_demand_server_connection::open(const int id, std::string type, const properties & settings)

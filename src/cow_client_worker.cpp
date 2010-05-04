@@ -231,7 +231,7 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
         params.save_path = ".";
     }
     
-    params.storage_mode = libtorrent::storage_mode_allocate;
+    params.storage_mode = libtorrent::storage_mode_sparse;
 
     properties::const_iterator torrent_it = props.find("torrent");
 

@@ -38,6 +38,7 @@ or implied, of CowboyCoders.
 
 #include "cow/dispatcher.hpp"
 #include "cow/cow_client_worker.hpp"
+#include "cow/download_control.hpp"
 
 namespace libcow {    
 
@@ -83,7 +84,9 @@ namespace libcow {
         */
         download_control* start_download(const libcow::program_info& program)
         {
-            return worker_->start_download(program, download_directory_);
+            download_control* ctrl = worker_->start_download(program, download_directory_);
+            ctrl->set_buffering_state();
+            return ctrl;
         }
 
        /**

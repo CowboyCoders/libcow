@@ -63,8 +63,8 @@ download_control::download_control(const libtorrent::torrent_handle& handle,
 
 download_control::~download_control()
 {
-    delete event_handler_;
     delete worker_;
+    delete event_handler_;
 }
 
 int download_control::piece_length()
@@ -79,9 +79,9 @@ int download_control::piece_length()
 //FIXME: queue add_piece calls if libtorrent is still checking hash
 void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
-    if(!handle_.is_seed()) {
-    libtorrent::torrent_info info = handle_.get_torrent_info();
-    std::vector<piece_data>::const_iterator iter;
+    if(handle_.is_valid() && !handle_.is_seed()) {
+        libtorrent::torrent_info info = handle_.get_torrent_info();
+        std::vector<piece_data>::const_iterator iter;
 
         libtorrent::torrent_status status = handle_.status();
         for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
@@ -103,7 +103,11 @@ void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 
             BOOST_LOG_TRIVIAL(debug) << "download_control::add_piece: adding piece with index "
                                      << iter->index;
-            handle_.add_piece(iter->index, iter->data.data());
+            if(handle_.is_valid()) {
+                handle_.add_piece(iter->index, iter->data.data());
+            } else {
+                BOOST_LOG_TRIVIAL(debug) << "add_piece: invalid torrent handle";
+            }
         }
     }
 }

@@ -98,13 +98,14 @@ namespace libcow
         void handle_unset_piece_finished_callback();
         bool handle_get_current_state(std::vector<int>& state);
         void signal_startup_callbacks();
-        void set_libtorrent_ready();
+        void handle_signal_startup_complete();
         void update_piece_requests(int piece_id);
         void invoke_piece_finished_callback(int piece_index, int device);
         std::vector<int> missing_pieces(const std::vector<int>& pieces);
         void set_disk_source();
 
         dispatcher* disp_;
+        dispatcher* callback_worker_;
         libtorrent::torrent_handle& torrent_handle_;
 
         std::multimap<int, piece_request> piece_nr_to_request_;

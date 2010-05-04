@@ -76,15 +76,15 @@ int main(int argc, char* argv[])
 
     BOOST_LOG_TRIVIAL(debug) << "Starting download_control test";
 
-    libcow::cow_client client;
+    libcow::cow_client* client = new libcow::cow_client();
 
-    client.set_download_directory(dl_path);
-    client.set_bittorrent_port(port_num);
-    client.register_download_device_factory(
+    client->set_download_directory(dl_path);
+    client->set_bittorrent_port(port_num);
+    client->register_download_device_factory(
         boost::shared_ptr<libcow::download_device_factory>(
             new libcow::on_demand_server_connection_factory()), 
         "http");
-    client.register_download_device_factory(
+    client->register_download_device_factory(
         boost::shared_ptr<libcow::download_device_factory>(
             new libcow::multicast_server_connection_factory()),
         "multicast");
@@ -99,12 +99,12 @@ int main(int argc, char* argv[])
 
     // test get_active_downloads
     std::list<libcow::download_control*> active_downloads 
-        = client.get_active_downloads();
+        = client->get_active_downloads();
 
     assert(active_downloads.size() == 0);
 
     std::cout << "starting download" << std::endl;
-    libcow::download_control* ctrl = client.start_download(prog_table.at(2));
+    libcow::download_control* ctrl = client->start_download(prog_table.at(2));
 
     if(!ctrl) {
         std::cout << "start_download returned null" << std::endl;
@@ -115,6 +115,7 @@ int main(int argc, char* argv[])
     ctrl->set_piece_finished_callback(piece_finished_callback);
 
     ctrl->invoke_after_init(boost::bind(invoked_after_init));
+
 
     boost::unique_lock<boost::mutex> lock(mutex);
     cond.wait(lock);
@@ -131,9 +132,9 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
 
     std::vector<int> must_have;
+    must_have.push_back(0);
     must_have.push_back(1);
     must_have.push_back(2);
-    must_have.push_back(5);
     
     std::map<int,std::string> dmap = ctrl->get_device_names();
     print_device_map(dmap);
@@ -157,7 +158,6 @@ int main(int argc, char* argv[])
     std::vector<int> reqs4;
     reqs4.push_back(ctrl->num_pieces() - 1);
     ctrl->pre_buffer(reqs4);
-
 
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 
@@ -194,16 +194,16 @@ int main(int argc, char* argv[])
 
     // test get_active_downloads
     active_downloads 
-        = client.get_active_downloads();
+        = client->get_active_downloads();
 
     assert(active_downloads.size() == 1);
     assert(active_downloads.front() == ctrl);
 
     // make sure that this stupid move just gives us a pointer to
     // the already started download
-    ctrl = client.start_download(prog_table.at(2));
+    //ctrl = client->start_download(prog_table.at(2));
 
-    ctrl->unset_piece_finished_callback();
+    //ctrl->unset_piece_finished_callback();
 
     for(size_t i = 11; i <= 15; ++i) {
  
@@ -224,10 +224,14 @@ int main(int argc, char* argv[])
         libcow::system::sleep(10);
     }
 
-    client.remove_download(ctrl);
+    //client->remove_download(ctrl);
 
     // should give a warning in the log, but not crash
-    client.remove_download(ctrl);
-    
+    //client->remove_download(ctrl);
+
+    delete client;
+
+    libcow::system::sleep(3000);
+
     return 0;
 }

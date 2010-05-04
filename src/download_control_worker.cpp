@@ -9,15 +9,20 @@
 
 using namespace libcow;
 
+unsigned int download_control_worker::buffering_state_length_ = 10;
+
 download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
                                                  int critical_window_length,
                                                  int critical_window_timeout)
     : critical_window_(critical_window_length),
-      torrent_handle_(h)
+      torrent_handle_(h),
+      buffering_state_counter_(0)
 {
     critically_requested_ = 
         std::vector<bool>(torrent_handle_.get_torrent_info().num_pieces(), false);
     disp_ = new dispatcher(critical_window_timeout);
+
+    is_running_ = true;
 }
 
 download_control_worker::~download_control_worker()
@@ -64,6 +69,7 @@ void download_control_worker::handle_pre_buffer(const std::vector<int>& requests
 
     download_device* random_access_device = 0;
 
+    // FIXME: should load balance instead
     for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
         download_device* current = it->get();
         if(current != 0 && current->is_random_access()) {
@@ -168,13 +174,31 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
         int device_index = rand() % random_access_devices.size();
 
         download_device* dev = random_access_devices[device_index];
-        disp_->post_delayed(
-            boost::bind(&download_control_worker::fetch_missing_pieces, this, 
-                        dev, 
-                        first_piece_to_prioritize, 
-                        first_piece_to_prioritize + critical_window_ - 1,
-                        force_request,
-                        _1));
+        
+        /* for the first buffering_state_length_ pieces, don't delay the
+         * random access requests (speeds up pre-buffering) */
+        if(buffering_state_counter_ > buffering_state_length_) 
+        {
+            disp_->post_delayed(
+                boost::bind(&download_control_worker::fetch_missing_pieces, this, 
+                            dev, 
+                            first_piece_to_prioritize, 
+                            first_piece_to_prioritize + critical_window_ - 1,
+                            force_request,
+                            _1));
+        } 
+        else 
+        {    
+            disp_->post(
+                boost::bind(&download_control_worker::fetch_missing_pieces, this, 
+                            dev, 
+                            first_piece_to_prioritize, 
+                            first_piece_to_prioritize + critical_window_ - 1,
+                            force_request,
+                            boost::system::error_code()));
+            ++buffering_state_counter_;
+            
+        }
     }
 }
 
@@ -217,4 +241,15 @@ void download_control_worker::fetch_missing_pieces(download_device* dev,
     if(reqs.size() > 0) {
         dev->get_pieces(reqs);
     }
+}
+
+void download_control_worker::set_buffering_state()
+{
+    disp_->post(boost::bind(
+        &download_control_worker::handle_set_buffering_state, this));
+}
+
+void download_control_worker::handle_set_buffering_state()
+{
+    buffering_state_counter_ = 0;
 }

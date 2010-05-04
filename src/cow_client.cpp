@@ -40,12 +40,15 @@ either expressed or implied, of CowboyCoders.
 
 #include <utility>
 #include <limits>
+#include <fstream>
 
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/alert.hpp>
 #include <libtorrent/alert_types.hpp>
+#include <libtorrent/bencode.hpp>
 
 #include <boost/thread.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 using namespace libcow;
 
@@ -97,6 +100,39 @@ cow_client::~cow_client()
      */
     delete alert_disp_;
     delete worker_;
+
+    
+    int running_torrents = 0;
+    std::vector<libtorrent::torrent_handle> handles = session_.get_torrents();
+    for (std::vector<libtorrent::torrent_handle>::iterator i = handles.begin();
+            i != handles.end(); ++i)
+    {
+        libtorrent::torrent_handle& h = *i;
+
+        if(!h.is_paused()) {
+            ++running_torrents;
+        }
+    }
+
+    session_.pause();
+    // wait for libtorren session to pause
+    while(running_torrents) {   
+        libtorrent::alert const* a = 
+            session_.wait_for_alert(libtorrent::seconds(10));
+
+        if (a == 0) break;
+
+        std::auto_ptr<libtorrent::alert> holder = session_.pop_alert();
+
+        libtorrent::torrent_paused_alert const* pause_alert =
+            libtorrent::alert_cast<libtorrent::torrent_paused_alert>(a);
+        
+        if (pause_alert) 
+        {
+            BOOST_LOG_TRIVIAL(debug) << pause_alert->message();
+            --running_torrents;
+        }
+    }
 }
 
 void cow_client::set_download_directory(const std::string& path)
