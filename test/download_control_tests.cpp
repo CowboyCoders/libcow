@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
     // the already started download
     //ctrl = client->start_download(prog_table.at(2));
 
-    //ctrl->unset_piece_finished_callback();
+    ctrl->unset_piece_finished_callback();
 
     for(size_t i = 11; i <= 15; ++i) {
  
