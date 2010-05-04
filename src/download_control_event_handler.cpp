@@ -68,6 +68,7 @@ void download_control_event_handler::current_state(std::vector<int>* state,
 void download_control_event_handler::handle_async_current_state(std::vector<int>* state,
                                                                 boost::function<void(std::vector<int>*)> callback)
 {
+    state->clear();
     std::vector<int>::const_iterator sources_iter;
     for(sources_iter = piece_origin_.begin();
         sources_iter != piece_origin_.end();
