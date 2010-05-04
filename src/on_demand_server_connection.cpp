@@ -202,6 +202,7 @@ void on_demand_server_connection::worker(std::string connection_str,
     }
 
     curl_easy_setopt(curl_ptr->curl, CURLOPT_WRITEDATA, (void*)&wrapper);
+    curl_easy_setopt(curl_ptr->curl, CURLOPT_TIMEOUT, 60); // 60 seconds time limit for request
 
     std::stringstream size_str;
     size_str << "Size: " << piece_size;

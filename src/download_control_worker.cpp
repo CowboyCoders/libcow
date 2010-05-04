@@ -18,9 +18,9 @@ download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
     critically_requested_ = 
         std::vector<bool>(torrent_handle_.get_torrent_info().num_pieces(), false);
     disp_ = new dispatcher(critical_window_timeout);
-    device_names_[0] = "missing";
-    device_names_[1] = "disk";
-    device_names_[2] = "bittorrent";
+    device_names_[0] = "Not downloaded";
+    device_names_[1] = "HDD";
+    device_names_[2] = "BitTorrent";
 }
 
 download_control_worker::~download_control_worker()
