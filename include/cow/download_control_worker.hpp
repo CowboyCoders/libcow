@@ -32,6 +32,15 @@ namespace libcow
         * @param num_pieces The number of critical pieces.
         */
         void set_critical_window(int num_pieces);
+       
+        /**
+         * This sets the timeout for the pieces in the critical 
+         * window. Note that this function is asynchronous, 
+         * the timeout will changes as soon as possible
+         *
+         * @param timeout the new timeout in ms
+         */ 
+        void set_critical_window_timeout(int timeout);
 
        /**
         * Adds a new download_device.
@@ -63,6 +72,7 @@ namespace libcow
 
     private:
         void handle_set_critical_window(int num_pieces);
+        void handle_set_critical_window_timeout(int timeout);
         void handle_add_download_device(download_device* dd);
         void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);

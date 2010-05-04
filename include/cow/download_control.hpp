@@ -76,6 +76,18 @@ namespace libcow {
             return handle_.get_torrent_info().num_pieces();
         }
 
+        /**
+         * This sets the timeout for the pieces in the critical 
+         * window. Note that this function is asynchronous, 
+         * the timeout will changes as soon as possible
+         *
+         * @param timeout the new timeout in ms
+         */ 
+        void set_critical_window_timeout(int timeout)
+        {
+            worker_->set_critical_window_timeout(timeout);
+        }
+
        /**
         * This function will try to make sure that the requested pieces
         * are downloaded by requesting them from a random access download device.

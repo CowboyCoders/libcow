@@ -42,6 +42,17 @@ void download_control_worker::handle_set_critical_window(int num_pieces)
     critical_window_ = num_pieces;
 }
 
+void download_control_worker::set_critical_window_timeout(int timeout)
+{
+    disp_->post(boost::bind(
+        &download_control_worker::handle_set_critical_window_timeout,this,timeout));
+}
+
+void download_control_worker::handle_set_critical_window_timeout(int timeout)
+{
+    // DJ HENRY SPIN THAT SHIT
+}
+
 void download_control_worker::add_download_device(download_device* dd)
 {
     disp_->post(boost::bind(
