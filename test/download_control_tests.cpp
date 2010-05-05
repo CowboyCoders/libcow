@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         "multicast");
 
     libcow::program_table prog_table;
-    prog_table.load_from_http("tau.hopto.org/program_table.xml",120);
+    prog_table.load_from_http("cowboycoders.se/program_table.xml",120);
 
     if(prog_table.size() == 0) {
         std::cout << "Couldn't fetch program table!" << std::endl;
@@ -167,9 +167,9 @@ int main(int argc, char* argv[])
     libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
 
     //FIXME: this test depends on file being big_buck_bunny.mpg
-    std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
-    std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
-    std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    //std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
+    //std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    //std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 

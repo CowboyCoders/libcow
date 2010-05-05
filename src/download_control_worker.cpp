@@ -173,11 +173,23 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
         torrent_handle_.piece_priority(i, 1);
     }
 
-    // set high priority for pieces in critical window
-    for(int i = 0; i < critical_window_; ++i) {
-        int idx = first_piece_to_prioritize + i;
+    int counter = 0;
+    // set highest priority for the most critical pieces
+    for(int i = 0; i < 2*critical_window_; ++i, ++counter) {
+        int idx = first_piece_to_prioritize + counter;
         if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
         torrent_handle_.piece_priority(idx, 7);
+    }
+    // create a tail of descending priorities
+    for(int i = 0; i < critical_window_; ++i, ++counter) {
+        int idx = first_piece_to_prioritize + counter;
+        if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
+        torrent_handle_.piece_priority(idx, 6);
+    }
+    for(int i = 0; i < critical_window_; ++i, ++counter) {
+        int idx = first_piece_to_prioritize + counter;
+        if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
+        torrent_handle_.piece_priority(idx, 5);
     }
 
     // get an up to date list of random access devices
@@ -221,6 +233,11 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
                             force_request,
                             boost::system::error_code()));
             ++buffering_state_counter_;
+#ifdef _DEBUG
+            if(buffering_state_counter_ > buffering_state_length_) {
+                BOOST_LOG_TRIVIAL(debug) << "Left buffering state";
+            }
+#endif _DEBUG
             
         }
     }
@@ -275,5 +292,6 @@ void download_control_worker::set_buffering_state()
 
 void download_control_worker::handle_set_buffering_state()
 {
+    BOOST_LOG_TRIVIAL(debug) << "Entered buffering state";
     buffering_state_counter_ = 0;
 }
