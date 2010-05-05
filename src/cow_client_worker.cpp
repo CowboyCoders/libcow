@@ -321,6 +321,22 @@ void cow_client_worker::handle_signal_startup_complete(const libtorrent::torrent
         dev->signal_startup_complete();
     }
 }
+        
+void cow_client_worker::signal_hash_failed(const libtorrent::torrent_handle& handle, int piece_index)
+{
+    disp_->post(boost::bind(&cow_client_worker::handle_signal_hash_failed,
+                            this,
+                            handle,
+                            piece_index));
+}
+        
+void cow_client_worker::handle_signal_hash_failed(const libtorrent::torrent_handle& handle, int piece_index)
+{
+    download_control *dev = download_control_for_torrent[handle];
+    if(dev) {
+        dev->handle_hash_failed(piece_index);
+    }
+}
 
 std::list<download_control*> cow_client_worker::get_active_downloads()
 {

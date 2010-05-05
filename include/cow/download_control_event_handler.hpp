@@ -55,6 +55,14 @@ namespace libcow
         */
         void signal_piece_finished(int piece_index);
 
+        /**
+         * This function updates the state if the hash of a piece fails. 
+         * If the hash failes, the source for that piece will be removed.
+         *
+         * @param piece_index The index of the piece for the hash that has failed
+         */
+        void handle_hash_failed(int piece_index);
+
        /**
         * This function sets the callback to call when we have finished downloading pieces.
         * @param func The function to call.
@@ -97,6 +105,7 @@ namespace libcow
         void handle_set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void handle_unset_piece_finished_callback();
         bool handle_get_current_state(std::vector<int>& state);
+        void internal_handle_hash_failed(int piece_index);
         void signal_startup_callbacks();
         void handle_signal_startup_complete();
         void update_piece_requests(int piece_id);

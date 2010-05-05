@@ -282,6 +282,11 @@ namespace libcow {
             event_handler_->signal_piece_finished(piece_index);
         }
 
+        void handle_hash_failed(int piece_index) {
+            event_handler_->handle_hash_failed(piece_index);
+            worker_->set_piece_requested(piece_index, false);
+        }
+
         void set_piece_src(int source, size_t piece_index) {
             event_handler_->set_piece_src(source, piece_index);
         }

@@ -54,6 +54,14 @@ namespace libcow
         */
         void pre_buffer(const std::vector<int>& requests);
 
+        /**
+         * This function set's if the piece have been requested or not from an on demand device
+         *
+         * @param piece_index the index to marks a not requested
+         * @param req The request status
+         */
+        void set_piece_requested(int piece_index, bool req);
+
        /**
         * Sets the current byte position for playing back movies. This function is used to
         * indicate wich pieces needs to be downloaded soon.
@@ -61,6 +69,7 @@ namespace libcow
         * @param force_request True if we should request pieces that we already have requested before.
         */
         void set_playback_position(size_t offset, bool force_request);
+        
         void set_buffering_state();
 
 
@@ -76,6 +85,7 @@ namespace libcow
         void handle_add_download_device(download_device* dd);
         void handle_pre_buffer(const std::vector<int>& requests);
         void handle_set_playback_position(size_t offset, bool force_request);
+        void handle_set_piece_requested(int piece_index, bool req);
         std::map<int,std::string> handle_get_device_names();
         
         void fetch_missing_pieces(download_device* dev,

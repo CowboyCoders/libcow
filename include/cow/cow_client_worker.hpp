@@ -74,6 +74,14 @@ namespace libcow
         */
         std::list<download_control*> get_active_downloads();
 
+        /**
+         * Calls the correct download_control that the hash of the piece has failed
+         *
+         * @param torrent_handle the handle for which the piece hash failed
+         * @param piece_index the index of piece
+         */
+        void signal_hash_failed(const libtorrent::torrent_handle& handle, int piece_index);
+
     private:
         download_control* handle_start_download(const program_info& program,
                                                 const std::string& download_directory);
@@ -85,6 +93,7 @@ namespace libcow
         
         void handle_signal_piece_finished(const libtorrent::torrent_handle& torrent, int piece_index);
         void handle_signal_startup_complete(const libtorrent::torrent_handle& torrent);
+        void handle_signal_hash_failed(const libtorrent::torrent_handle& handle, int piece_index);
         std::list<download_control*> handle_get_active_downloads();
 
         void clear_download_controls();

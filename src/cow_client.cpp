@@ -155,6 +155,7 @@ void cow_client::alert_thread_function()
             if(libtorrent::hash_failed_alert* hash_alert = libtorrent::alert_cast<libtorrent::hash_failed_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: hash failed for piece: " 
                                          << hash_alert->piece_index;
+                worker_->signal_hash_failed(hash_alert->handle,hash_alert->piece_index);
             } else if(libtorrent::piece_finished_alert* piece_alert = libtorrent::alert_cast<libtorrent::piece_finished_alert>(alert)) {
                 BOOST_LOG_TRIVIAL(debug) << "cow_client: piece: " 
                                          << piece_alert->piece_index 

@@ -52,6 +52,19 @@ void download_control_worker::handle_set_critical_window_timeout(int timeout)
 {
     // DJ HENRY SPIN THAT SHIT
 }
+        
+void download_control_worker::set_piece_requested(int piece_index, bool req)
+{
+    disp_->post(boost::bind(&download_control_worker::handle_set_piece_requested,
+                            this,
+                            piece_index,
+                            req));
+}
+
+void download_control_worker::handle_set_piece_requested(int piece_index, bool req)
+{
+    critically_requested_[piece_index] = req;
+}
 
 void download_control_worker::add_download_device(download_device* dd)
 {

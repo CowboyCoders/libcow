@@ -36,11 +36,22 @@ void download_control_event_handler::set_piece_src(int source, size_t piece_inde
 
 void download_control_event_handler::handle_set_piece_src(int source, size_t piece_index) 
 {
-    if(piece_index < piece_origin_.size() &&
-        piece_origin_[piece_index] == 0)
+    if(piece_index < piece_origin_.size())
     {
         piece_origin_[piece_index] = source;
     }
+}
+
+void download_control_event_handler::handle_hash_failed(int piece_index)
+{
+    disp_->post(boost::bind(&download_control_event_handler::internal_handle_hash_failed,
+                this,
+                piece_index));
+}
+
+void download_control_event_handler::internal_handle_hash_failed(int piece_index)
+{
+    piece_origin_[piece_index] = 0;
 }
 
 bool download_control_event_handler::get_current_state(std::vector<int>& state)
