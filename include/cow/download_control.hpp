@@ -60,11 +60,13 @@ namespace libcow {
         * @param critical_window_length HENRY, document this
         * @param critical_window_timeout HENRY, document this
         * @param id a unique id for this download device
+        * @param download_directory the directory for the file
         */
         download_control(const libtorrent::torrent_handle& handle, 
                          int critical_window_length,
                          int critical_window_timeout,
-                         int id);
+                         int id,
+                         std::string download_directory);
         ~download_control();
 
         /**
@@ -298,6 +300,7 @@ namespace libcow {
         std::ifstream file_handle_;
 
         int id_;
+        std::string download_dir_;
 
         friend class cow_client_worker;
     };

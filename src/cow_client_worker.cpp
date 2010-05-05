@@ -132,7 +132,7 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
     }
 
     // Create a new download_control
-    download_control* download = new libcow::download_control(torrent, 4, 3000, program.id); // FIXME: no magic numbers please :)
+    download_control* download = new libcow::download_control(torrent, 4, 3000, program.id, download_directory); // FIXME: no magic numbers please :)
 
     for (device_it = program.download_devices.begin(); 
         device_it != program.download_devices.end(); ++device_it) 
@@ -226,6 +226,7 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
     
     if(!download_directory.empty()) {
         params.save_path = download_directory;
+        BOOST_LOG_TRIVIAL(info) << "Setting download path to: " << download_directory;
     } else {
         BOOST_LOG_TRIVIAL(warning) << "No download directory set, using default path '.'";
         params.save_path = ".";

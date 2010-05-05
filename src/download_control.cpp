@@ -50,9 +50,11 @@ using namespace libcow;
 download_control::download_control(const libtorrent::torrent_handle& handle, 
                                    int critical_window_length,
                                    int critical_window_timeout,
-                                   int id)
+                                   int id,
+                                   std::string download_directory)
     : handle_(handle),
-      id_(id)
+      id_(id),
+      download_dir_(download_directory)
 
 {
     srand (time(NULL));
@@ -198,7 +200,11 @@ std::string download_control::filename() const
 {
     assert(handle_.get_torrent_info().files().num_files() == 1);
     
-    return handle_.get_torrent_info().file_at(0).path;
+    std::string name = handle_.get_torrent_info().file_at(0).path;
+    
+    std::string absolute_path = download_dir_ + "/" + name;
+
+    return absolute_path;
 }
 
 size_t download_control::read_data(size_t offset, libcow::utils::buffer& buffer)
