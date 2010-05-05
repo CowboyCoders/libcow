@@ -54,7 +54,7 @@ or implied, of CowboyCoders.
 #include "cow/libcow_types.hpp"
 
 // turn off cassert in release
-#ifndef DEBUG
+#if !defined(DEBUG) && !defined(NDEBUG)
 #   define NDEBUG
 #endif
 
