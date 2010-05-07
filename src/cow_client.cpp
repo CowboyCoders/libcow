@@ -55,9 +55,18 @@ using namespace libcow;
 cow_client::cow_client()
 {
     //TODO: change this to configurable log levels
+#ifdef VERBOSE_LOGGING
+    session_.set_alert_mask(libtorrent::alert::progress_notification |
+							libtorrent::alert::storage_notification | 
+                            libtorrent::alert::status_notification |
+                            libtorrent::alert::tracker_notification);
+#else
 	session_.set_alert_mask(libtorrent::alert::progress_notification |
 							libtorrent::alert::storage_notification | 
-                            libtorrent::alert::status_notification);
+                            libtorrent::alert::status_notification |
+                            libtorrent::alert::tracker_notification |
+                            libtorrent::alert::debug_notification);
+#endif
     libtorrent::session_settings settings;
     settings.user_agent = "libcow";
     settings.allowed_fast_set_size = 1000; // 1000 pieces without choking
@@ -178,8 +187,22 @@ void cow_client::alert_thread_function()
                     worker_->signal_startup_complete(state_alert->handle);
                 }
                 
+            } else if(libtorrent::tracker_error_alert* tracker_error_alert = libtorrent::alert_cast<libtorrent::tracker_error_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (TRACKER ERROR): " << tracker_error_alert->message();
+            } else if(libtorrent::tracker_warning_alert* tracker_warning_alert = libtorrent::alert_cast<libtorrent::tracker_warning_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (TRACKER WARNING): " << tracker_warning_alert->message();
+            } else if(libtorrent::tracker_reply_alert* tracker_reply_alert = libtorrent::alert_cast<libtorrent::tracker_reply_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (tracker reply): " << tracker_reply_alert->message();
+            } else if(libtorrent::peer_error_alert* peer_error_alert = libtorrent::alert_cast<libtorrent::peer_error_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (peer error): " << peer_error_alert->message();
+            } else if(libtorrent::peer_connect_alert* peer_connect_alert = libtorrent::alert_cast<libtorrent::peer_connect_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (peer action): " << peer_connect_alert->message();
+            } else if(libtorrent::peer_disconnected_alert* peer_disconnected_alert = libtorrent::alert_cast<libtorrent::peer_disconnected_alert>(alert)) {
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (peer action): " << peer_disconnected_alert->message();
             } else {
-                // BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
+#ifdef VERBOSE_LOGGING
+                BOOST_LOG_TRIVIAL(debug) << "cow_client (libtorrent alert): " << alert->message();
+#endif
             }
             alert_ptr = session_.pop_alert();
             alert = alert_ptr.get();
