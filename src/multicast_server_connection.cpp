@@ -121,6 +121,7 @@ bool multicast_server_connection::open(const int id, std::string type, const lib
     const boost::asio::ip::address& multicast_address(boost::asio::ip::address::from_string(multicast_addr));
     packet_size_ = packet_size;
     piece_size_ = piece_size;
+    packetizer_.set_sync_frequency(piece_size/packet_size + 2);
 
     // This will contain incoming sync- and movie_packets
     data_ = new char[packet_size_];
