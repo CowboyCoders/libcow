@@ -2,6 +2,8 @@
 #define ___libcow_download_control_worker___
 
 #include <libtorrent/torrent_handle.hpp>
+#include <exception>
+#include <string>
 
 namespace libcow 
 {
@@ -15,7 +17,6 @@ namespace libcow
     class download_control_worker
     {
     public:
-        
        /**
         * Creates a new download_control_worker.
         * @param h The torrent_handle that this worker belongs to.

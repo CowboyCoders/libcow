@@ -76,6 +76,7 @@ set(LIBCOW_SOURCE
 set(LIBCOW_HEADERS
     ${LIBCOW_SOURCE_DIR}/include/cow/cow.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/libcow_types.hpp
+    ${LIBCOW_SOURCE_DIR}/include/cow/exceptions.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/cow_client.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/cow_client_worker.hpp
     ${LIBCOW_SOURCE_DIR}/include/cow/curl_instance.hpp

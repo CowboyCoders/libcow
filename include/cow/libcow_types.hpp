@@ -34,6 +34,7 @@ namespace libcow {
 class cow_client;
 class download_control;
 class download_device;
+class exception;
 
 struct progress_info;
 struct program_info;

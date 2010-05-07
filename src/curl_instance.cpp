@@ -29,6 +29,7 @@ either expressed or implied, of CowboyCoders.
 
 #include "cow/libcow_def.hpp"
 #include "cow/curl_instance.hpp"
+#include "cow/exceptions.hpp"
 
 #include <curl/curl.h>
 #include <curl/types.h>
@@ -63,8 +64,9 @@ std::string libcow::http_get_as_string(const std::string& url,size_t timeout)
     res = curl_easy_perform(curl.curl);
 
     if(res != CURLE_OK) {
-        BOOST_LOG_TRIVIAL(error) << "Download failed";
-        return std::string("");
+        std::stringstream msg;
+        msg << "Download failed. " << curl_easy_strerror(res);
+        throw libcow::exception(msg.str());
     }
 
     return ss.str(); //std::string(ss.str());

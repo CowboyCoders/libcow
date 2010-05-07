@@ -64,7 +64,15 @@ int main() {
 
     // Start downloading the movie. A libcow::download_control pointer is created
     // that can be used to extract information about the download, as well as stop it.
-    libcow::download_control* controller = example_client.start_download(program_info);
+    try
+    {
+        libcow::download_control* controller = example_client.start_download(program_info);
+    }
+    catch(libcow::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
     // In order to start receiving data, the multicast server must now be started.
     // Example: ./multicast_server big_buck_bunny.mpg 0 600000 224.0.100.100 12345

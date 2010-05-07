@@ -64,8 +64,16 @@ int main() {
 
     // Start downloading the movie. A libcow::download_control pointer is created
     // that can be used to extract information about the download, as well as stop it.
-    libcow::download_control* controller = example_client.start_download(program_info);
     
+    libcow::download_control* controller = 0;
+    try
+    {
+        libcow::download_control* controller = example_client.start_download(program_info);
+    }
+    catch(libcow::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
     // In order to request data from the on_demand_server, we must first create a vector of integers.
     std::vector<int> requests;
     // Addings piece indices for the pieces we want to request

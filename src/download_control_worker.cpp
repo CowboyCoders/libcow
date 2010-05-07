@@ -227,7 +227,7 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
         {    
             disp_->post(
                 boost::bind(&download_control_worker::fetch_missing_pieces, this, 
-                            dev, 
+                            dev,
                             first_piece_to_prioritize, 
                             first_piece_to_prioritize + critical_window_ - 1,
                             force_request,
@@ -237,7 +237,7 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
             if(buffering_state_counter_ > buffering_state_length_) {
                 BOOST_LOG_TRIVIAL(debug) << "Left buffering state";
             }
-#endif _DEBUG
+#endif
             
         }
     }

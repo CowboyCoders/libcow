@@ -39,6 +39,7 @@ or implied, of CowboyCoders.
 #include "cow/dispatcher.hpp"
 #include "cow/cow_client_worker.hpp"
 #include "cow/download_control.hpp"
+#include "cow/exceptions.hpp"
 
 namespace libcow {    
 
@@ -79,14 +80,20 @@ namespace libcow {
         * This function will start downloading the selected program using BitTorrent.
         * If any download_devices have been registered using register_download_device_factory,
         * the client will initialize these devices and start gathering data from them as well.
+        * @throws libcow::exception
         * @param program The the program to start downloading.
         * @return A pointer to the download_control used for this program.
         */
         download_control* start_download(const libcow::program_info& program)
         {
             download_control* ctrl = worker_->start_download(program, download_directory_);
-            ctrl->set_buffering_state();
-            return ctrl;
+
+            if(ctrl) {
+                ctrl->set_buffering_state();
+                return ctrl;
+            } else {
+                throw libcow::exception("Failed to start download: Could not initialize download control");
+            }
         }
 
        /**

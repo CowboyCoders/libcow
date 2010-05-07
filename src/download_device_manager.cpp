@@ -47,7 +47,14 @@ download_device* download_device_manager::create_instance(int id, std::string id
    if(it == factories.end()) {
        return 0;
    } else {
-       return it->second.get()->create(id, ident, pmap);
+       boost::shared_ptr<download_device_factory> factory_ptr = it->second;
+       download_device_factory* factory = factory_ptr.get();
+       if(!factory) {
+           std::stringstream ss;
+           ss << "Could not get download device factory with id: " << id << " and ident: " << ident;
+           throw libcow::exception(ss.str());
+       }
+       return factory->create(id, ident, pmap);
    }
 }
 

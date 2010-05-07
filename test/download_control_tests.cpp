@@ -90,24 +90,44 @@ int main(int argc, char* argv[])
         "multicast");
 
     libcow::program_table prog_table;
-    prog_table.load_from_http("cowboycoders.se/program_table.xml",120);
+    try 
+    {
+        prog_table.load_from_http("localhost:8080/program_table.xml",120);
+    }
+    catch (libcow::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
     if(prog_table.size() == 0) {
         std::cout << "Couldn't fetch program table!" << std::endl;
         return 1;
     }
 
-    // test get_active_downloads
+    // tesqzt get_active_downloads
     std::list<libcow::download_control*> active_downloads 
         = client->get_active_downloads();
 
     assert(active_downloads.size() == 0);
 
     std::cout << "starting download" << std::endl;
-    libcow::download_control* ctrl = client->start_download(prog_table.at(2));
-
-    if(!ctrl) {
-        std::cout << "start_download returned null" << std::endl;
+    
+    libcow::download_control* ctrl;
+ 
+    if(prog_table.size() < 1) {
+        std::cerr << "Error: Got empty program table." << std::endl;
+        return 1;
+    }
+    libcow::program_info& proginfo = prog_table.at(0);
+    
+    try 
+    {
+        ctrl = client->start_download(proginfo);
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what() << std::endl;
         return 1;
     }
 
@@ -201,7 +221,14 @@ int main(int argc, char* argv[])
 
     // make sure that this stupid move just gives us a pointer to
     // the already started download
-    //ctrl = client->start_download(prog_table.at(2));
+    try 
+    {
+        ctrl = client->start_download(prog_table.at(2));
+    } catch (libcow::exception& e)
+    {
+        std::cout << e.what() << std::endl;
+        return 1;
+    }
 
     ctrl->unset_piece_finished_callback();
 

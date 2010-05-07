@@ -80,13 +80,15 @@ cow_client_worker::~cow_client_worker()
 }
 
 download_control* cow_client_worker::start_download(const program_info& program,
-                                       const std::string& download_directory)
+                                                    const std::string& download_directory)
 {
+    error_message err;
     boost::function<download_control*()> functor
         = boost::bind<download_control*>(&cow_client_worker::handle_start_download, 
                                          this, 
                                          program, 
-                                         download_directory);
+                                         download_directory,
+                                         boost::ref(err));
 
     boost::packaged_task<download_control*> task(functor);
     boost::unique_future<download_control*> future = task.get_future();
@@ -95,11 +97,21 @@ download_control* cow_client_worker::start_download(const program_info& program,
                 boost::ref(task)));
     
     future.wait();
-    return future.get();
+    if(future.has_exception()) {
+        throw libcow::exception(err.get());
+    } else {
+        download_control* ctrl = future.get();
+        if(!ctrl) {
+            throw libcow::exception(err.get());
+        } else {
+            return future.get();
+        }
+    }
 }
 
 download_control* cow_client_worker::handle_start_download(const program_info& program,
-                                              const std::string& download_directory)
+                                              const std::string& download_directory,
+                                              error_message& err)
 {
     // begin by checking if this download_control is already active
 
@@ -115,7 +127,7 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
     device_map::const_iterator device_it = program.download_devices.find("torrent");
 
     if (device_it == program.download_devices.end()) {
-        BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to start download because the program does not have a torrent download device.";
+        err.set("Failed to start download because the program does not have a torrent download device.");
         return 0;
     }
 
@@ -123,16 +135,31 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
     properties torrent_props = device_it->second;
 
     // Create the torrent_handle from the properties
-    libtorrent::torrent_handle torrent = create_torrent_handle(torrent_props, download_directory);
-
+    libtorrent::torrent_handle torrent;
+    try {
+        torrent = create_torrent_handle(torrent_props, download_directory);
+    } catch (libtorrent::libtorrent_exception& e) {
+        std::stringstream ss;
+        ss << "Torrent error: " << e.what();        
+        err.set(ss.str());
+        throw;
+    } catch (std::exception& e) {
+        err.set(e.what());
+        throw;
+    }
     // Make sure the handle is valid
     if (!torrent.is_valid()) {
-        BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create torrent handle.";
-        return 0;
+        err.set("Failed to create torrent handle.");
+        throw;
     }
 
     // Create a new download_control
-    download_control* download = new libcow::download_control(torrent, 4, 3000, program.id, download_directory); // FIXME: no magic numbers please :)
+    download_control* download = new(std::nothrow) download_control(torrent, 4, 3000, program.id, download_directory); // FIXME: no magic numbers please :)
+
+    if(!download) {
+        err.set("Failed to create download control.");
+        return 0;
+    }
 
     for (device_it = program.download_devices.begin(); 
         device_it != program.download_devices.end(); ++device_it) 
@@ -240,17 +267,14 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
 
         const std::string& torrent = torrent_it->second;
         size_t timeout = 120; // in seconds, should we be able to configure this?
-        std::string torrent_file = http_get_as_string(torrent,timeout); 
 
-    	try {
-            // Set the torrent file
-    		params.ti = new libtorrent::torrent_info(torrent_file.data(), torrent_file.size());
-            // Create and return the torrent_handle
-    		return torrent_session_.add_torrent(params);		
-    	} 
-        catch (libtorrent::libtorrent_exception e) {
-    		BOOST_LOG_TRIVIAL(error) << "cow_client: failed to load torrent: " << e.what(); 
-    	}
+        std::string torrent_file = http_get_as_string(torrent,timeout); 
+       
+        // Set the torrent file (intrusive pointer, no delete needed)
+		params.ti = new libtorrent::torrent_info(torrent_file.data(), torrent_file.size());
+        // Create and return the torrent_handle
+
+        return torrent_session_.add_torrent(params);		
     }
 
     properties::const_iterator magnet_it = props.find("magnet");
@@ -267,8 +291,7 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
 		}
     }
 
-    // If we have reached this point we have failed to create the handle
-    return libtorrent::torrent_handle();
+    throw libcow::exception("Could not create torrent handle");
 }
 
 void cow_client_worker::clear_download_controls() 

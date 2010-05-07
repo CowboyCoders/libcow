@@ -3,6 +3,7 @@
 
 #include "cow/dispatcher.hpp"
 #include "cow/download_device_manager.hpp"
+#include "cow/exceptions.hpp"
 
 #include <libtorrent/alert.hpp>
 #include <libtorrent/session.hpp>
@@ -84,7 +85,8 @@ namespace libcow
 
     private:
         download_control* handle_start_download(const program_info& program,
-                                                const std::string& download_directory);
+                                                const std::string& download_directory,
+                                                error_message& err);
         
         void handle_remove_download(download_control* download);
         
