@@ -100,6 +100,13 @@ namespace libcow {
             worker_->pre_buffer(requests);
         }
 
+        void pre_buffer(const std::vector<int>& requests, boost::function<void(std::vector<int>)> callback)
+        {
+            worker_->pre_buffer(requests);
+            invoke_when_downloaded(requests, callback);
+        }
+
+
         /**
         * This function returns the total file size of the downloaded data.
         * @return Size of the downloaded data in bytes.

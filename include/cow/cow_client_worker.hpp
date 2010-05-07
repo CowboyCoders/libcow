@@ -38,7 +38,8 @@ namespace libcow
         * @return A pointer to the libcow::download_control for this program.
         */
         download_control* start_download(const program_info& program,
-                                         const std::string& download_directory);
+                                         const std::string& download_directory,
+                                         int timeout);
         
        /**
         * Stops and removes the download. This function is asynchronous.
@@ -86,6 +87,7 @@ namespace libcow
     private:
         download_control* handle_start_download(const program_info& program,
                                                 const std::string& download_directory,
+                                                int timeout,
                                                 error_message& err);
         
         void handle_remove_download(download_control* download);
@@ -100,7 +102,8 @@ namespace libcow
 
         void clear_download_controls();
         libtorrent::torrent_handle create_torrent_handle(const properties& props,
-                                                         const std::string& download_directory);
+                                                         const std::string& download_directory,
+                                                         int timeout);
 
         dispatcher* disp_;
 

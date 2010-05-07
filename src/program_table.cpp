@@ -134,17 +134,25 @@ bool parse_program_info(TiXmlElement* program_node, program_info& dest)
     return true;
 }
 
-bool program_table::load_from_file(const std::string& file_name)
+void program_table::load_from_file(const std::string& file_name)
 {
     std::ifstream fs(file_name.c_str(), std::ios_base::in);
     if (!fs) {
-        BOOST_LOG_TRIVIAL(error) << "program_table: Error opening file \"" << file_name << "\".";
-        return false;
+        std::stringstream ss;
+        ss << "Error opening file \"" << file_name << "\".";
+        BOOST_LOG_TRIVIAL(error) << "program_table: " << ss;
+        throw libcow::exception(ss.str());
     }
 
     fs.seekg(0, std::ios_base::end);
-    size_t length = static_cast<size_t>(fs.tellg());
+    std::streampos length = fs.tellg();
     fs.seekg(0);
+
+    if (length <= 0) {
+        std::stringstream ss;
+        ss << "Failed to seek in file: " << file_name;
+        throw libcow::exception(ss.str());
+    }
 
     // Allocate and read the whole file in one read
     char* buffer = new char[length];
@@ -154,20 +162,17 @@ bool program_table::load_from_file(const std::string& file_name)
     std::string s(buffer);
     delete [] buffer;
 
-    return load_from_string(s);    
+    load_from_string(s);    
 }
 
-bool program_table::load_from_http(const std::string& url, size_t timeout)
+void program_table::load_from_http(const std::string& url, size_t timeout)
 {
     std::string s = libcow::http_get_as_string(url, timeout);
-    if(s == "") {
-        return false;
-    } 
-    BOOST_LOG_TRIVIAL(debug) << "program_table: Downloaded program table with size:" << s.length() << ".";
-    return load_from_string(s);
+    BOOST_LOG_TRIVIAL(debug) << "program_table: downloaded program table with size:" << s.length();
+    load_from_string(s);
 }
 
-bool program_table::load_from_string(const std::string& s)
+void program_table::load_from_string(const std::string& s)
 {
     // Clear old program table entries if any
     clear();
@@ -176,8 +181,10 @@ bool program_table::load_from_string(const std::string& s)
     doc.Parse(s.c_str());
 
     if (doc.Error()) {
-        BOOST_LOG_TRIVIAL(error) << "program_table: Parse error:" << doc.ErrorDesc();
-        return false;
+        std::stringstream ss;
+        ss << "Parse error: " << doc.ErrorDesc();
+        BOOST_LOG_TRIVIAL(error) << "program_table: " << ss;
+        throw libcow::exception(ss.str());        
     }
 
     TiXmlHandle docHandle(&doc);
@@ -191,8 +198,6 @@ bool program_table::load_from_string(const std::string& s)
             BOOST_LOG_TRIVIAL(warning) << "program_table: Skipping invalid program.";
         }
 	}
-	
-    return true;
 }
 
 void program_table::clear()

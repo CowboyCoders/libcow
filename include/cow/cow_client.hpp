@@ -84,9 +84,9 @@ namespace libcow {
         * @param program The the program to start downloading.
         * @return A pointer to the download_control used for this program.
         */
-        download_control* start_download(const libcow::program_info& program)
+        download_control* start_download(const libcow::program_info& program, int timeout = 60)
         {
-			download_control* ctrl = worker_->start_download(program, download_directory_);
+			download_control* ctrl = worker_->start_download(program, download_directory_, timeout);
 			if(ctrl) {
 				ctrl->set_buffering_state();
 				return ctrl;

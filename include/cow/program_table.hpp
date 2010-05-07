@@ -27,7 +27,7 @@ namespace libcow {
         * @return True if it was possible to load the configuration,
         * otherwise false.
         */
-        bool load_from_file(const std::string& file_name);
+        void load_from_file(const std::string& file_name);
 
        /**
         * Tries to download and load an XML configuration from a web server.
@@ -37,7 +37,7 @@ namespace libcow {
         * @return True if it was possible to load the configuration,
         * otherwise false.
         */
-        bool load_from_http(const std::string& url, size_t timeout);
+        void load_from_http(const std::string& url, size_t timeout);
 
        /**
         * Tries to load an XML configuration from a string.
@@ -45,7 +45,7 @@ namespace libcow {
         * @return True if it was possible to load the configuration,
         * otherwise false.
         */
-        bool load_from_string(const std::string& s);
+        void load_from_string(const std::string& s);
 
        /**
         * Removes all entries from the program table. 

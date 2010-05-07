@@ -83,7 +83,8 @@ cow_client_worker::~cow_client_worker()
 }
 
 download_control* cow_client_worker::start_download(const program_info& program,
-                                                    const std::string& download_directory)
+                                                    const std::string& download_directory,
+                                                    int timeout)
 {
     error_message err;
     boost::function<download_control*()> functor
@@ -91,6 +92,7 @@ download_control* cow_client_worker::start_download(const program_info& program,
                                          this, 
                                          program, 
                                          download_directory,
+                                         timeout,
                                          boost::ref(err));
 
     boost::packaged_task<download_control*> task(functor);
@@ -113,8 +115,9 @@ download_control* cow_client_worker::start_download(const program_info& program,
 }
 
 download_control* cow_client_worker::handle_start_download(const program_info& program,
-                                              const std::string& download_directory,
-                                              error_message& err)
+                                                           const std::string& download_directory,
+                                                           int timeout,
+                                                           error_message& err)
 {
     // begin by checking if this download_control is already active
 
@@ -140,7 +143,7 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
     // Create the torrent_handle from the properties
     libtorrent::torrent_handle torrent;
     try {
-        torrent = create_torrent_handle(torrent_props, download_directory);
+        torrent = create_torrent_handle(torrent_props, download_directory, timeout);
     } catch (libtorrent::libtorrent_exception& e) {
         std::stringstream ss;
         ss << "Torrent error: " << e.what();        
@@ -257,7 +260,8 @@ void cow_client_worker::handle_remove_download(download_control* download)
 }
 
 libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const properties& props,
-                                                                    const std::string& download_directory)
+                                                                    const std::string& download_directory,
+                                                                    int timeout)
 {
     libtorrent::add_torrent_params params;
     
@@ -276,7 +280,6 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
     if (torrent_it != props.end()) {
 
         const std::string& torrent = torrent_it->second;
-        size_t timeout = 120; // in seconds, should we be able to configure this?
 
         std::string torrent_file = http_get_as_string(torrent,timeout);
 
