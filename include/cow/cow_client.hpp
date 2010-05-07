@@ -86,14 +86,13 @@ namespace libcow {
         */
         download_control* start_download(const libcow::program_info& program)
         {
-            download_control* ctrl = worker_->start_download(program, download_directory_);
-
-            if(ctrl) {
-                ctrl->set_buffering_state();
-                return ctrl;
-            } else {
-                throw libcow::exception("Failed to start download: Could not initialize download control");
-            }
+			download_control* ctrl = worker_->start_download(program, download_directory_);
+			if(ctrl) {
+				ctrl->set_buffering_state();
+				return ctrl;
+			} else {
+				throw libcow::exception("Failed to start download: Could not initialize download control");
+			}
         }
 
        /**

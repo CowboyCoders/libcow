@@ -73,25 +73,26 @@ int main() {
     try 
     {
         libcow::download_control* controller = basic_example_client.start_download(program_info);
-    }
+
+		std::cout << "Running basic_example, press ENTER to quit...";
+		char q;
+		do {
+			std::cin.get(q);
+		}
+		while(q != '\n');
+		std::cout << "Quitting..." << std::endl;
+	    
+		// Stop the download.
+		basic_example_client.remove_download(controller);
+
+		// Quit :-)
+		return 0;
+
+	}
     catch (libcow::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return 1;
     }
 
-
-    std::cout << "Running basic_example, press ENTER to quit...";
-    char q;
-    do {
-        std::cin.get(q);
-    }
-    while(q != '\n');
-    std::cout << "Quitting..." << std::endl;
-    
-    // Stop the download.
-    basic_example_client.remove_download(controller);
-
-    // Quit :-)
-    return 0;
 }

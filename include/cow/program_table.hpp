@@ -5,7 +5,7 @@ namespace libcow {
 
 
    /**
-    * This class is responsible for retrieving and parsing program infro
+    * This class is responsible for retrieving and parsing program info
     * from an XML file. The XML file can either be stored on disk, in a string,
     * or downloaded from a web server.
     */
@@ -62,6 +62,13 @@ namespace libcow {
         * @param entry The program to add.
         */
         void add(const libcow::program_info& entry);
+
+		/**
+		* Return info for program with id program_id.
+		* @param program_id Program id to fetch
+		* @return A const iterator for the specified program_id.
+		*/
+		libcow::program_info_vector::const_iterator find(int program_id) const;
 
        /**
         * Returns the program at the specified index in the program table.

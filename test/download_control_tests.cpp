@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     libcow::program_table prog_table;
     try 
     {
-        prog_table.load_from_http("localhost:8080/program_table.xml",120);
+        prog_table.load_from_http("www.cowboycoders.se/program_table.xml",120);
     }
     catch (libcow::exception& e)
     {
@@ -121,11 +121,17 @@ int main(int argc, char* argv[])
     }
     libcow::program_info& proginfo = prog_table.at(0);
     
+	
+
     try 
     {
-        ctrl = client->start_download(proginfo);
+		libcow::program_info_vector::const_iterator klafsit = prog_table.find(7);
+		if (klafsit != prog_table.end()){
+			ctrl = client->start_download(*klafsit);
+		}
+        //ctrl = client->start_download(proginfo);
     }
-    catch (std::exception& e)
+    catch (libcow::exception& e)
     {
         std::cout << e.what() << std::endl;
         return 1;
@@ -221,10 +227,20 @@ int main(int argc, char* argv[])
 
     // make sure that this stupid move just gives us a pointer to
     // the already started download
+	
+	// list movies
+	libcow::program_table::iterator itfuck;
+	for(itfuck = prog_table.begin(); itfuck != prog_table.end(); ++itfuck) {
+		std::cout<< itfuck->id << itfuck->name<< std::endl;
+	}
+	
+
     try 
     {
-        ctrl = client->start_download(prog_table.at(2));
-    } catch (libcow::exception& e)
+		ctrl = client->start_download(prog_table.at(2));
+
+        
+    } catch (std::exception& e)
     {
         std::cout << e.what() << std::endl;
         return 1;

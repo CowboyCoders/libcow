@@ -46,7 +46,7 @@ int main() {
     libcow::program_table table;
     
     // URL to the XML file and timeout for the request (in seconds).
-    std::string server_url = "http://cowboycoders.se/program_table.xml";
+    std::string server_url = "http://www.cowboycoders.se/program_table.xml";
     size_t timeout = 120;
     // Download and parse the XML. Creates a table of all available programs.
     table.load_from_http(server_url, timeout);
@@ -68,30 +68,32 @@ int main() {
     try
     {
         libcow::download_control* controller = example_client.start_download(program_info);
-    }
+
+		// In order to start receiving data, the multicast server must now be started.
+		// Example: ./multicast_server big_buck_bunny.mpg 0 600000 224.0.100.100 12345
+		// This will start the multicast server serving the movie big_buck_bunny.mpg with ID 0
+		// at bitrate 600000 on multicast IP 224.0.100.100 and port 12345.
+	    
+	    
+		std::cout << "Running multicast_example, press ENTER to quit...";
+		char q;
+		do {
+			std::cin.get(q);
+		}
+		while(q != '\n');
+		std::cout << "Quitting..." << std::endl;
+	    
+		// Stop the download.
+		example_client.remove_download(controller);
+		// Stop the logging.
+		// Quit :-)
+		return 0;
+
+	}
     catch(libcow::exception& e)
     {
         std::cerr << e.what() << std::endl;
         return 1;
     }
 
-    // In order to start receiving data, the multicast server must now be started.
-    // Example: ./multicast_server big_buck_bunny.mpg 0 600000 224.0.100.100 12345
-    // This will start the multicast server serving the movie big_buck_bunny.mpg with ID 0
-    // at bitrate 600000 on multicast IP 224.0.100.100 and port 12345.
-    
-    
-    std::cout << "Running multicast_example, press ENTER to quit...";
-    char q;
-    do {
-        std::cin.get(q);
-    }
-    while(q != '\n');
-    std::cout << "Quitting..." << std::endl;
-    
-    // Stop the download.
-    example_client.remove_download(controller);
-    // Stop the logging.
-    // Quit :-)
-    return 0;
 }

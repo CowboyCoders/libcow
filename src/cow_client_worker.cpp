@@ -5,6 +5,9 @@
 
 #include <libtorrent/magnet_uri.hpp>
 
+// #include <iostream>  // uncomment for torrent file printing (also uncomment the actual printing)
+
+
 using namespace libcow;
 
 /**
@@ -268,8 +271,14 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
         const std::string& torrent = torrent_it->second;
         size_t timeout = 120; // in seconds, should we be able to configure this?
 
-        std::string torrent_file = http_get_as_string(torrent,timeout); 
-       
+        std::string torrent_file = http_get_as_string(torrent,timeout);
+
+		/* // TORRENT FILE PRINTING - I WANT A TORRENT FILE!
+		std::ofstream fp_out;
+		fp_out.open("bice.torrent", std::ios::out | std::ios::binary);
+		fp_out << torrent_file;
+        */
+
         // Set the torrent file (intrusive pointer, no delete needed)
 		params.ti = new libtorrent::torrent_info(torrent_file.data(), torrent_file.size());
         // Create and return the torrent_handle

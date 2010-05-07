@@ -210,6 +210,16 @@ void program_table::add(const libcow::program_info& entry)
     entries_.push_back(entry);
 }
 
+libcow::program_info_vector::const_iterator program_table::find(int program_id) const {
+	libcow::program_info_vector::const_iterator it;
+	for (it = entries_.begin(); it != entries_.end(); ++it){
+		if (it->id == program_id){
+			return it;
+		}
+	}
+	return it;
+}
+
 const libcow::program_info& program_table::at(size_t index) const
 {
     return entries_[index];
