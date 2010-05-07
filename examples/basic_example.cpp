@@ -69,6 +69,7 @@ int main() {
 
     // Start downloading the movie. A libcow::download_control pointer is created
     // that can be used to extract information about the download, as well as stop it.
+    libcow::download_control* controller = 0;
     try 
     {
         libcow::download_control* controller = basic_example_client.start_download(program_info);

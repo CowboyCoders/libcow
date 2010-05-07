@@ -10,8 +10,12 @@ namespace libcow
     class LIBCOW_EXPORT exception: public std::exception
     {
     public:
-        exception(const std::string& message) 
+        exception(const std::string& message)
             : msg(message)
+        {
+        }
+
+        ~exception() throw()
         {
         }
         
