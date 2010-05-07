@@ -222,21 +222,25 @@ libcow::program_info_vector::const_iterator program_table::find(int program_id) 
 
 const libcow::program_info& program_table::at(size_t index) const
 {
+    assert(index >= 0 && index < size());
     return entries_[index];
 }
 
 libcow::program_info& program_table::at(size_t index)
 {
+    assert(index >= 0 && index < size());
     return entries_[index];
 }
 
 const libcow::program_info& program_table::operator[](size_t index) const
 {
+    assert(index >= 0 && index < size());
     return entries_[index];
 }
 
 libcow::program_info& program_table::operator[](size_t index)
 {
+    assert(index >= 0 && index < size());
     return entries_[index];
 }
 

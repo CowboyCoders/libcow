@@ -238,9 +238,7 @@ int main(int argc, char* argv[])
     try 
     {
 		ctrl = client->start_download(prog_table.at(2));
-
-        
-    } catch (std::exception& e)
+    } catch (libcow::exception& e)
     {
         std::cout << e.what() << std::endl;
         return 1;

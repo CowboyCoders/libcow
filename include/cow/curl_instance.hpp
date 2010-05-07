@@ -124,6 +124,13 @@ namespace libcow
             curl_easy_cleanup(curl);
         }
 
+        long get_http_code() 
+        {
+            long http_code = 0;
+            curl_easy_getinfo (curl, CURLINFO_HTTP_CODE, &http_code);
+            return http_code;
+        }
+
        /**
         * Handle to curl.
         */

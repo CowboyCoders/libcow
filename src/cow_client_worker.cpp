@@ -186,11 +186,18 @@ download_control* cow_client_worker::handle_start_download(const program_info& p
                 const properties& props = device_it->second;
 
                 // Create a new instance of the download device using the factory
-                download_device* device = dd_manager_.create_instance(device_id, device_type, props);
-
+                download_device* device;
+                try {
+                    device = dd_manager_.create_instance(device_id, device_type, props);
+                } catch(std::exception& e) {
+                    BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create download device of type '" 
+                                             << device_type << "': " << e.what();
+                    continue;
+                }
                 if (!device) {
                     // Write an error but continue since the at least the torrent worked
-                    BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create download device of type: " << device_type;
+                    BOOST_LOG_TRIVIAL(error) << "cow_client: Failed to create download device of type '" 
+                                             << device_type << "'";
                 } else {
                     libcow::response_handler_function add_pieces_function = 
                         boost::bind(&download_control::add_pieces, download, _1, _2);

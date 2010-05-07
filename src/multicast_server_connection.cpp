@@ -131,7 +131,6 @@ bool multicast_server_connection::open(const int id, std::string type, const lib
     piece_data_ = new char[piece_size_];
     memset(piece_data_,0,piece_size_);
 
-
     // Create the socket so that multiple may be bound to the same address.
     boost::asio::ip::udp::endpoint listen_endpoint(
             listen_address, multicast_port);

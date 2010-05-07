@@ -65,7 +65,14 @@ std::string libcow::http_get_as_string(const std::string& url,size_t timeout)
 
     if(res != CURLE_OK) {
         std::stringstream msg;
-        msg << "Download failed. " << curl_easy_strerror(res);
+        msg << "Download failed from URL '" << url << "': " << curl_easy_strerror(res);
+        throw libcow::exception(msg.str());
+    }
+
+    long http_code = curl.get_http_code();
+    if(http_code != 200) {
+        std::stringstream msg;
+        msg << "Download failed from URL '" << url << "'. Error code: " << http_code;
         throw libcow::exception(msg.str());
     }
 

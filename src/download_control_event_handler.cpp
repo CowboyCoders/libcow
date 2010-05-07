@@ -280,5 +280,7 @@ void download_control_event_handler::unset_piece_finished_callback()
 
 void download_control_event_handler::handle_unset_piece_finished_callback()
 {
-    piece_finished_callback_.clear();
+    if(!piece_finished_callback_.empty()) {
+        piece_finished_callback_.clear();
+    }
 }
