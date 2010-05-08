@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     libcow::program_table prog_table;
     try 
     {
-        prog_table.load_from_http("www.cowboycoders.se/program_table.xml",120);
+        prog_table.load_from_http("www.cowbocoders.se/program_table.xml",120);
     }
     catch (libcow::exception& e)
     {
