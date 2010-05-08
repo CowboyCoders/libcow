@@ -76,6 +76,8 @@ cow_client::cow_client()
     settings.strict_end_game_mode = false;
     settings.auto_upload_slots = false;
     settings.announce_to_all_trackers = true;
+    settings.min_announce_interval = 15;
+    settings.local_service_announce_interval = 10;
     session_.set_settings(settings);
 
     // disabling settings.auto_upload_slots and setting max_uploads to INT_MAX
