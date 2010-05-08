@@ -75,6 +75,7 @@ cow_client::cow_client()
     settings.seeding_piece_quota = 20;
     settings.strict_end_game_mode = false;
     settings.auto_upload_slots = false;
+    settings.announce_to_all_trackers = true;
     session_.set_settings(settings);
 
     // disabling settings.auto_upload_slots and setting max_uploads to INT_MAX
