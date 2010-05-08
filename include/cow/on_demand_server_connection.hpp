@@ -153,7 +153,7 @@ namespace libcow {
          // worker thread function
          void worker(std::string connection_str,
                      const std::size_t piece_size,
-                     const std::vector<int> indices);
+                     const std::vector<int>& indices);
 
 
          // 'work' needs io_service for init.
@@ -164,11 +164,8 @@ namespace libcow {
          // pointers to threads in the thread pool
          std::vector<boost::shared_ptr<boost::thread> > threads;
 
-         // this gives us one curl instance per thread in the pool
-         boost::thread_specific_ptr<curl_instance> curl_ptr;
-
-         int id_; //Device id
-         std::string type_;
+         int id_; // download device id
+         std::string type_; // download device type
 
          void send(size_t piece_size, std::vector<int> indices);
     };

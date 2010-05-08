@@ -29,125 +29,72 @@ or implied, of CowboyCoders.
 #ifndef ___libcow_curl_instance___
 #define ___libcow_curl_instance___
 
+#include <sstream>
+
+#include <boost/log/trivial.hpp>
+#include <boost/bind.hpp>
+
 #include <curl/curl.h>
 #include <curl/types.h>
 #include <curl/easy.h>
-#include <boost/log/trivial.hpp>
+
+#include <cow/exceptions.hpp>
+#include <cow/utils/buffer.hpp>
 
 namespace libcow
 {
-    /**
-     * Performs a HTTP GET request.
-     * @param url The url to get data from.
-     * @param timeout The timeout in seconds to wait.
-     */
-    LIBCOW_EXPORT std::string http_get_as_string(const std::string& url, size_t timeout);
-
-    /**
-     * Thrown if the internal cURL instance couldn't be initialized.
-     */
-     struct curl_init_exception 
-         : public std::exception
-     {
-        /**
-         * Throw the initialisation exception.
-         * @return The exception.
-         */
-         virtual const char* what() const throw()
-         {
-             return "Failed to initialize curl";
-         }
-     };
-
-    /**
-     * A small buffer wrapper used for curl calls. Can be used for keeping
-     * track of the number of bytes written to the buffer.
-     */
-     struct buffer_wrapper 
-         : public boost::noncopyable
-     {
-         /**
-          * Creates a new buffer_wrapper and initializes the buffer. The
-          * bytes_written variable will be initialized to 0.
-          * @param size The size of the buffer to use.
-          */
-         buffer_wrapper(size_t size)
-             : buf_size(size), bytes_written(0)
-         {
-             buffer = new char[buf_size];
-         }
-     
-         ~buffer_wrapper()
-         {
-             delete [] buffer;
-         }
-
-         /**
-          * The actual data buffer.
-          */
-         char* buffer;
-
-        /**
-         * The size of the buffer in bytes.
-         */
-         size_t buf_size;
-
-        /**
-         * The number of bytes written to the buffer.
-         */
-         size_t bytes_written;
-     };
-
-    struct curl_instance
+    class LIBCOW_EXPORT curl_instance
     {
+    public:
        /**
         * Creates a new curl_instance that make calls to the file
         * specified in the connection string.
         * @param connection_string The url to the file to make calls to.
         */
-        curl_instance(const std::string& connection_string)
-        {
-            curl = curl_easy_init();
+        curl_instance(const std::string& connection_string);
 
-            if(!curl) { //FIXME: how to handle this?
-                throw curl_init_exception();
-            }
+        ~curl_instance();
 
-            curl_easy_setopt(curl, CURLOPT_URL, connection_string.c_str());
-            curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-        }
-
-        ~curl_instance()
-        {
-            curl_easy_cleanup(curl);
-        }
-
+        std::stringstream& perform_unbounded_request(size_t timeout, 
+                                                   const std::vector<std::string>& headers);
+        utils::buffer perform_bounded_request(size_t timeout, 
+                                              const std::vector<std::string>& headers,
+                                              size_t buffer_size);
+                           
+    private:
+        size_t write_allocated_data(void *downloaded_data,
+                                    size_t element_size,
+                                    size_t num_elements);
+        size_t write_dynamic_data(void *downloaded_data,
+                                  size_t element_size,
+                                  size_t num_elements);
+        
+        static size_t invoke_allocated_write(void *buffer,
+                                             size_t element_size,
+                                             size_t num_elements,
+                                             void *object);
+        static size_t invoke_dynamic_write(void *buffer,
+                                           size_t element_size,
+                                           size_t num_elements,
+                                           void *object);
+        void check_curl_code(CURLcode code);
+        void set_timeout(size_t timeout);
+        void set_headers(const std::vector<std::string>& headers);
+        void execute_curl_request();
+        
         long get_http_code() 
         {
             long http_code = 0;
             curl_easy_getinfo (curl, CURLINFO_HTTP_CODE, &http_code);
             return http_code;
         }
-
-       /**
-        * Handle to curl.
-        */
+        
+        std::string url_;
+        char *allocated_buffer_;
+        size_t allocated_buffer_size_;
+        size_t bytes_written_;
+        std::stringstream dynamic_buffer_;
         CURL *curl;
-
-       /**
-        * Creates several smaller buffers from a big buffer.
-        * @param buffer The smaller buffer.
-        * @param size The size of the buffer.
-        * @param nmemb The number of buffers.
-        * @param userp The bigger buffer containing all data.
-        */
-        static size_t write_data(void * buffer,
-                                 size_t size,
-                                 size_t nmemb,
-                                 void *userp);
-
     };
 }
 

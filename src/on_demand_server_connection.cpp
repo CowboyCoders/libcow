@@ -147,62 +147,13 @@ void on_demand_server_connection::send(size_t piece_size, std::vector<int> indic
     
 }
 
-size_t libcow::curl_instance::write_data(void * buffer,
-                                         size_t size,
-                                         size_t nmemb,
-                                         void *userp)
-{
-    if(size != 1) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
-                << "chunk size not 1";
-        return 0;
-    }
-
-    libcow::buffer_wrapper * wrapper = (libcow::buffer_wrapper*)userp;
-
-    if(wrapper->bytes_written + nmemb > wrapper->buf_size) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: error: "
-                << "buffer overflow";
-        return 0;
-    }
-
-    for(size_t i = 0; i < nmemb; ++i) {
-        wrapper->buffer[wrapper->bytes_written++] = ((char*)buffer)[i];
-    }
-
-    return size * nmemb;
-}
-
 
 void on_demand_server_connection::worker(std::string connection_str,
                                          const std::size_t piece_size,
-                                         const std::vector<int> indices)
+                                         const std::vector<int>& indices)
 {
-    // create a new curl instance for this thread if none exists
-    if(curl_ptr.get() == 0) {
-        curl_ptr.reset(new curl_instance(connection_str));
-        // please note that the curl_instance will be deleted automatically
-        // when this thread terminates.
-    }
-
-    /* allocate a fat buffer for all pieces to be downloaded.
-        * buffer_wrapper will delete its internal buffer when we fall out
-        * of this scope.
-        */
-    libcow::buffer_wrapper wrapper(piece_size * indices.size());
-
-    // these are the pointers we will actually pass to the user
-    std::vector<piece_data> piece_datas;
-
-    // "slice" up the buffer into pieces
-    // (in fact, we just do some pointer arithmetic on the buffer)
-    for(size_t i = 0; i < indices.size(); ++i) {
-        piece_datas.push_back(
-                piece_data(indices[i], utils::buffer(wrapper.buffer + (piece_size * i), piece_size)));
-    }
-
-    curl_easy_setopt(curl_ptr->curl, CURLOPT_WRITEDATA, (void*)&wrapper);
-    curl_easy_setopt(curl_ptr->curl, CURLOPT_TIMEOUT, 60); // 60 seconds time limit for request
+    
+    curl_instance curl(connection_str);
 
     std::stringstream size_str;
     size_str << "Size: " << piece_size;
@@ -220,30 +171,23 @@ void on_demand_server_connection::worker(std::string connection_str,
         }
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Size: " << size_str.str();
-    BOOST_LOG_TRIVIAL(debug) << "Indices: " << index_str.str();
+    BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection::worker: requesting indices: " << index_str.str();
+    
+    std::vector<std::string> headers;
+    headers.push_back(size_str.str());
+    headers.push_back(index_str.str());
 
-    struct curl_slist *chunk = NULL;
-    chunk = curl_slist_append(chunk, size_str.str().c_str());
-    chunk = curl_slist_append(chunk, index_str.str().c_str());
+    utils::buffer buf = curl.perform_bounded_request(60,headers,piece_size*indices.size());
+    
+    // these are the pointers we will actually pass to the user
+    std::vector<piece_data> piece_datas;
 
-    CURLcode res;
-
-    res = curl_easy_setopt(curl_ptr->curl, CURLOPT_HTTPHEADER, chunk);
-
-
-    if(res != CURLE_OK) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: curl_easy_setopt: "
-                << curl_easy_strerror(res);
-        return;
-    }
-
-    res = curl_easy_perform(curl_ptr->curl);
-
-    if(res != CURLE_OK) {
-        BOOST_LOG_TRIVIAL(debug) << "on_demand_server_connection: curl_easy_perform error: "
-                << curl_easy_strerror(res);
-        return;
+    // "slice" up the buffer into pieces
+    // (in fact, we just do some pointer arithmetic on the buffer)
+    for(size_t i = 0; i < indices.size(); ++i) {
+        utils::buffer data(buf.data() + (piece_size * i), piece_size);
+        piece_data piece(indices[i], data);
+        piece_datas.push_back(piece);
     }
 
     // invoke user defined callback

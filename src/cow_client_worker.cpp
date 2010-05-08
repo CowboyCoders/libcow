@@ -281,7 +281,8 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
 
         const std::string& torrent = torrent_it->second;
 
-        std::string torrent_file = http_get_as_string(torrent,timeout);
+        curl_instance curl(torrent);
+        std::stringstream& ss = curl.perform_unbounded_request(timeout, std::vector<std::string>());
 
 		/* // TORRENT FILE PRINTING - I WANT A TORRENT FILE!
 		std::ofstream fp_out;
@@ -290,7 +291,7 @@ libtorrent::torrent_handle cow_client_worker::create_torrent_handle(const proper
         */
 
         // Set the torrent file (intrusive pointer, no delete needed)
-		params.ti = new libtorrent::torrent_info(torrent_file.data(), torrent_file.size());
+		params.ti = new libtorrent::torrent_info(ss.str().data(), ss.str().size());
         // Create and return the torrent_handle
 
         return torrent_session_.add_torrent(params);		

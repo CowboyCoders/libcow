@@ -44,7 +44,7 @@ int main() {
     // Create a properties map that will be used to configure a libcow::download_device.
     libcow::properties properties;
     // URL to the torrent file.
-    properties["torrent"] = "http://cowboycoders.se/big_buck_bunny.mpg.torrent";
+    properties["torrent"] = "http://10.0.0.92/torrents/big_buck_bunny.mpg.torrent";
     
     // Create a program_info struct that we will fill with info in
     // order to be able to download a movie. In this example we will
@@ -69,7 +69,6 @@ int main() {
 
     // Start downloading the movie. A libcow::download_control pointer is created
     // that can be used to extract information about the download, as well as stop it.
-    libcow::download_control* controller = 0;
     try 
     {
         libcow::download_control* controller = basic_example_client.start_download(program_info);

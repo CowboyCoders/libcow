@@ -32,7 +32,6 @@ or implied, of CowboyCoders.
 #include <string>
 #include <tinyxml.h>
 
-using libcow::http_get_as_string;
 using libcow::program_info;
 using libcow::properties;
 
@@ -45,7 +44,9 @@ program_info* parse_program_info(TiXmlElement* p) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string program_table = http_get_as_string("cowboycoders.se/program_table.xml", 120);
+    libcow::curl_instance curl("cowboycoders.se/program_table.xml");
+    std::stringstream& sstream = curl.perform_unbounded_request(120,std::vector<std::string>());
+    std::string program_table = sstream.str();
     std::cout << "download size:" << program_table.length() << "\n";
 
     std::cout << program_table << "\n";
@@ -99,23 +100,5 @@ int main(int argc, char* argv[]) {
 	}
 	
     std::cout << ((download_device_information_map[1])["http"])["port"];
-    /*
-    while(c = root->IterateChildren(c)) {
-        if(c->Type() == c->TINYXML_ELEMENT) {
-            //program_info* pi = parse_program_info(c->ToElement());
-            int program_id = -1;
-            if(p->QueryIntAttribute("id", &program_id) != TIXML_SUCCESS)
-                std::cerr << "Invalid program: attribute missing\n";
-            while (d = c->IterateChildren(d)){
-                if(d->Type() == d->TINYXML_ELEMENT) {
-                    
-                }
-            }
-            std::cout << "Program id: " << program_id << "\n";
-        }
-
-        std::cout << c->Value() << "\n";
-    }
-    */
 	system("PAUSE");
 }

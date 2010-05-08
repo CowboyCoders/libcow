@@ -167,9 +167,11 @@ void program_table::load_from_file(const std::string& file_name)
 
 void program_table::load_from_http(const std::string& url, size_t timeout)
 {
-    std::string s = libcow::http_get_as_string(url, timeout);
-    BOOST_LOG_TRIVIAL(debug) << "program_table: downloaded program table with size:" << s.length();
-    load_from_string(s);
+    curl_instance curl(url);
+    std::cout << "curl ready" << std::endl;
+    std::stringstream& conf_stream = curl.perform_unbounded_request(timeout,std::vector<std::string>());
+    BOOST_LOG_TRIVIAL(debug) << "program_table: downloaded program table with size:" << conf_stream.str().length();
+    load_from_string(conf_stream.str());
 }
 
 void program_table::load_from_string(const std::string& s)
