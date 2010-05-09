@@ -90,7 +90,7 @@ void download_control_event_handler::invoke_after_init(boost::function<void(void
 void download_control_event_handler::handle_invoke_after_init(boost::function<void(void)> callback)
 {
     if(is_libtorrent_ready_) {
-        callback();
+        callback_worker_->post(callback);
     } else {
         startup_complete_callbacks_.push_back(callback);
     }
@@ -157,20 +157,37 @@ void download_control_event_handler::signal_piece_finished(int piece_index)
         boost::bind(&download_control_event_handler::invoke_piece_finished_callback, this, piece_index,source));
 }
 
-void download_control_event_handler::invoke_when_downloaded(const std::vector<int>& pieces, 
-                                              boost::function<void(std::vector<int>)> callback)
+void download_control_event_handler::invoke_when_downloaded(const std::vector<chunk>& chunks, 
+                                                            boost::function<void(std::vector<int>)> callback)
 {
     invoke_after_init(
         boost::bind(&download_control_event_handler::handle_invoke_when_downloaded,
                     this,
-                    pieces,
+                    chunks,
                     callback));
 
 }
 
-void download_control_event_handler::handle_invoke_when_downloaded(const std::vector<int>& pieces, 
-                                                     boost::function<void(std::vector<int>)> callback)
+void download_control_event_handler::handle_invoke_when_downloaded(const std::vector<chunk>& chunks, 
+                                                                   boost::function<void(std::vector<int>)> callback)
 {
+    std::vector<int> pieces;
+    const libtorrent::torrent_info& torrent_info = torrent_handle_.get_torrent_info();
+
+    std::vector<chunk>::const_iterator iter;
+    for(iter = chunks.begin(); iter != chunks.end(); ++iter) {
+        const chunk& c = *iter;
+        int first_piece = c.offset() / torrent_info.piece_length();
+        int num_pieces = static_cast<int>(ceil(c.length() * 1.0 / torrent_info.piece_length()));
+        for(int i = 0; i < num_pieces; ++i) {
+            int piece_index = first_piece + i;
+            if(piece_index < torrent_info.num_pieces()) {
+                pieces.push_back(first_piece + i);
+            }
+        }
+    }
+
+    // FIXME: map chunks to pieces
     std::vector<int> missing = missing_pieces(pieces);
     if(missing.size() != 0) {
         std::list<int>* piece_list = new std::list<int>(missing.begin(),missing.end());

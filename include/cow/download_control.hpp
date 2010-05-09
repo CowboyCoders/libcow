@@ -30,6 +30,7 @@ or implied, of CowboyCoders.
 #define ___libcow_download_control___
 
 #include <cow/utils/buffer.hpp>
+#include <cow/utils/chunk.hpp>
 #include <cow/dispatcher.hpp>
 #include <cow/download_control_event_handler.hpp>
 #include <cow/download_control_worker.hpp>
@@ -95,15 +96,18 @@ namespace libcow {
         * are downloaded by requesting them from a random access download device.
         * @param requests A vector of requests to download.
         */
-        void pre_buffer(const std::vector<int>& requests)
+        void pre_buffer(const chunk& c)
         {
-            worker_->pre_buffer(requests);
+            worker_->pre_buffer(c);
         }
 
-        void pre_buffer(const std::vector<int>& requests, boost::function<void(std::vector<int>)> callback)
+        void pre_buffer(const std::vector<chunk>& chunks, boost::function<void(std::vector<int>)> callback)
         {
-            worker_->pre_buffer(requests);
-            invoke_when_downloaded(requests, callback);
+            std::vector<chunk>::const_iterator it;
+            for(it = chunks.begin(); it != chunks.end(); ++it) {
+                pre_buffer(*it);
+            }
+            invoke_when_downloaded(chunks, callback);
         }
 
 
@@ -198,10 +202,10 @@ namespace libcow {
          * @param callback The function to call when all the pieces are downloaded
          * @param pieces A vector describing which pieces should be downloaded
          */
-        void invoke_when_downloaded(const std::vector<int>& pieces, 
+        void invoke_when_downloaded(const std::vector<chunk>& chunks, 
                                     boost::function<void(std::vector<int>)> callback)
         {
-            event_handler_->invoke_when_downloaded(pieces, callback);
+            event_handler_->invoke_when_downloaded(chunks, callback);
         }
         
         /**
@@ -217,14 +221,14 @@ namespace libcow {
         }
 
         /**
-         * Sets the number of consecutive pieces, starting with the piece at the
+         * Sets the number of consecutive bytes, starting with the byte at the
          * current playback position, that should be prioritized for downloading.
          *
-         * @param num_pieces The length, in pieces, of the critical window
+         * @param length The length, in bytes, of the critical window
          */
-        void set_critical_window(int num_pieces)
+        void set_critical_window(size_t length)
         {
-            worker_->set_critical_window(num_pieces);
+            worker_->set_critical_window(length);
         }
 
         /**
@@ -236,7 +240,7 @@ namespace libcow {
         }
 
         /**
-        * Removes a 'piece added' callback.
+        * Removes a 'piece finished' callback.
         * @param func A callback function of type void(int).
         */
         void unset_piece_finished_callback() {

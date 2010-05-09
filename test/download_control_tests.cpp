@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     libcow::program_table prog_table;
     try 
     {
-        prog_table.load_from_http("www.cowbocoders.se/program_table.xml",120);
+        prog_table.load_from_http("www.cowboycoders.se/program_table.xml",120);
     }
     catch (libcow::exception& e)
     {
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
     try 
     {
-		libcow::program_info_vector::const_iterator klafsit = prog_table.find(7);
+		libcow::program_info_vector::const_iterator klafsit = prog_table.find(2);
 		if (klafsit != prog_table.end()){
 			ctrl = client->start_download(*klafsit);
 		}
@@ -157,10 +157,8 @@ int main(int argc, char* argv[])
     }
     std::cout << std::endl;
 
-    std::vector<int> must_have;
-    must_have.push_back(0);
-    must_have.push_back(1);
-    must_have.push_back(2);
+    std::vector<libcow::chunk> must_have;
+    must_have.push_back(libcow::chunk(0, 262144*4));
     
     std::map<int,std::string> dmap = ctrl->get_device_names();
     print_device_map(dmap);
@@ -171,37 +169,23 @@ int main(int argc, char* argv[])
 
     std::vector<int> reqs1;
     reqs1.push_back(0);
-    ctrl->pre_buffer(reqs1);
-
-    std::vector<int> reqs2;
-    reqs2.push_back(1);
-    ctrl->pre_buffer(reqs2);
-
-    std::vector<int> reqs3;
-    reqs3.push_back(2);
-    ctrl->pre_buffer(reqs3);
-
-    std::vector<int> reqs4;
-    reqs4.push_back(ctrl->num_pieces() - 1);
-    ctrl->pre_buffer(reqs4);
+    ctrl->pre_buffer(libcow::chunk(0, 262144*4));
+    ctrl->pre_buffer(libcow::chunk(262144*30, 262144*3+1));
+    ctrl->pre_buffer(libcow::chunk(262144*78, 262144*4));
 
 	//std::cout << "piece length: " << ctrl->piece_length() << std::endl;
 
-    char* testbuf = new char[16*1024];
-    libcow::utils::buffer testbuf_wrap(testbuf, 16*1024);
-    char* testbuf2 = new char[4064];
-    libcow::utils::buffer testbuf_wrap2(testbuf2, 4064);
+    char* testbuf = new char[262144*4];
+    libcow::utils::buffer testbuf_wrap(testbuf, 262144*4);
 
     //FIXME: this test depends on file being big_buck_bunny.mpg
-    //std::cout << "read attempt 1: " << ctrl->read_data(150118368, testbuf_wrap2) << std::endl;
-    //std::cout << "read attempt 2: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
-    //std::cout << "read attempt 3: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
+    std::cout << "read attempt 1: " << ctrl->read_data(0, testbuf_wrap) << std::endl;
 
     libcow::utils::buffer buf(new char[ctrl->piece_length()*100], ctrl->piece_length()*100);
 
     for(size_t i = 0; i < 10; ++i) {
  
-        //ctrl->debug_print();
+        ctrl->debug_print();
 
         size_t playback_pos = i*256*1024;
         std::cout << "setting playback position to " << playback_pos << std::endl;

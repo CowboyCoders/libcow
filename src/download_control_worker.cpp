@@ -3,16 +3,19 @@
 #include "cow/download_device.hpp"
 #include "cow/piece_request.hpp"
 #include "cow/dispatcher.hpp"
+#include "cow/utils/chunk.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+
+#include <cmath>
 
 using namespace libcow;
 
 unsigned int download_control_worker::buffering_state_length_ = 10;
 
 download_control_worker::download_control_worker(libtorrent::torrent_handle& h,
-                                                 int critical_window_length,
+                                                 size_t critical_window_length,
                                                  int critical_window_timeout)
     : critical_window_(critical_window_length),
       torrent_handle_(h),
@@ -31,15 +34,15 @@ download_control_worker::~download_control_worker()
     download_devices_.clear();
 }
 
-void download_control_worker::set_critical_window(int num_pieces)
+void download_control_worker::set_critical_window(size_t length)
 {
     disp_->post(boost::bind(
-        &download_control_worker::handle_set_critical_window, this, num_pieces));
+        &download_control_worker::handle_set_critical_window, this, length));
 }
 
-void download_control_worker::handle_set_critical_window(int num_pieces)
+void download_control_worker::handle_set_critical_window(size_t length)
 {
-    critical_window_ = num_pieces;
+    critical_window_ = length;
 }
 
 void download_control_worker::set_critical_window_timeout(int timeout)
@@ -79,48 +82,22 @@ void download_control_worker::handle_add_download_device(download_device* dd)
     download_devices_.push_back(dd_ptr);
 }
 
-void download_control_worker::pre_buffer(const std::vector<int>& requests)
+void download_control_worker::pre_buffer(const chunk& c)
 {
     disp_->post(boost::bind(
-        &download_control_worker::handle_pre_buffer, this, requests));
+        &download_control_worker::handle_download_strategy, this, c, true, true));
 
-}
-
-void download_control_worker::handle_pre_buffer(const std::vector<int>& requests)
-{
-    BOOST_LOG_TRIVIAL(info) << "download_control_worker: handle_pre_buffer called";
-    std::vector<boost::shared_ptr<download_device> >::iterator it;
-
-    download_device* random_access_device = 0;
-
-    // FIXME: should load balance instead
-    for(it = download_devices_.begin(); it != download_devices_.end(); ++it) {
-        download_device* current = it->get();
-        if(current != 0 && current->is_random_access()) {
-            random_access_device = current;
-            break;
-        }
-    }
-
-    if(random_access_device) 
-    {
-        int piece_length = torrent_handle_.get_torrent_info().piece_length();
-        std::vector<piece_request> wrapped_request;
-        std::vector<int>::const_iterator requests_iter;
-        for(requests_iter = requests.begin(); requests_iter != requests.end(); ++requests_iter) {
-            wrapped_request.push_back(piece_request(piece_length, *requests_iter, 1));
-        }
-        BOOST_LOG_TRIVIAL(info) << "Sending piece request to on_demand_device";
-        random_access_device->get_pieces(wrapped_request);
-    } else {
-        BOOST_LOG_TRIVIAL(info) << "Can't pre_buffer. No random access device available.";
-    }
 }
 
 void download_control_worker::set_playback_position(size_t offset, bool force_request)
 {
     disp_->post(boost::bind(
         &download_control_worker::handle_set_playback_position, this, offset, force_request));
+}
+
+void download_control_worker::handle_set_playback_position(size_t offset, bool force_request)
+{
+    handle_download_strategy(chunk(offset, critical_window_), force_request, false);
 }
         
 std::map<int,std::string> download_control_worker::get_device_names()
@@ -154,41 +131,49 @@ std::map<int,std::string> download_control_worker::handle_get_device_names()
     return devices;
 }
 
-void download_control_worker::handle_set_playback_position(size_t offset, bool force_request)
+void download_control_worker::handle_download_strategy(const chunk& c, bool force_request, bool pre_buffer)
 {
     // don't fiddle with download strategies if seeding
     if(torrent_handle_.status().state == libtorrent::torrent_status::seeding) {
         return;
     }
 
-    assert(offset >= 0);
+    assert(c.offset() >= 0);
 
-    // create a vector of pieces to prioritize
-    int first_piece_to_prioritize = offset / torrent_handle_.get_torrent_info().piece_length();
+    // create a vector of pieces to
+    const libtorrent::torrent_info& torrent_info = torrent_handle_.get_torrent_info();
+    int first_piece_to_prioritize = c.offset() / torrent_info.piece_length();
+    // "greedy" mapping from bytes to pieces. 
+    // the total size (in bytes) of the priorizied pieces will at least be 'length'.
 
+    int num_pieces_in_critical_window = 
+        static_cast<int>(ceil(c.length() * 1.0 / torrent_info.piece_length()));
+    
     //std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
 
-    // set low priority for pieces before playback position
-    for(int i = 0; i < first_piece_to_prioritize; ++i) {
-        torrent_handle_.piece_priority(i, 1);
+    if(buffering_state_counter_ > buffering_state_length_ && !pre_buffer) {
+        // set low priority for pieces before playback position unless we're buffering
+        for(int i = 0; i < first_piece_to_prioritize; ++i) {
+            torrent_handle_.piece_priority(i, 1);
+        }
     }
 
     int counter = 0;
     // set highest priority for the most critical pieces
-    for(int i = 0; i < 2*critical_window_; ++i, ++counter) {
+    for(int i = 0; i < 2*num_pieces_in_critical_window; ++i, ++counter) {
         int idx = first_piece_to_prioritize + counter;
-        if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
+        if(idx >= torrent_info.num_pieces()) break;
         torrent_handle_.piece_priority(idx, 7);
     }
     // create a tail of descending priorities
-    for(int i = 0; i < critical_window_; ++i, ++counter) {
+    for(int i = 0; i < num_pieces_in_critical_window; ++i, ++counter) {
         int idx = first_piece_to_prioritize + counter;
-        if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
+        if(idx >= torrent_info.num_pieces()) break;
         torrent_handle_.piece_priority(idx, 6);
     }
-    for(int i = 0; i < critical_window_; ++i, ++counter) {
+    for(int i = 0; i < num_pieces_in_critical_window; ++i, ++counter) {
         int idx = first_piece_to_prioritize + counter;
-        if(idx >= torrent_handle_.get_torrent_info().num_pieces()) break;
+        if(idx >= torrent_info.num_pieces()) break;
         torrent_handle_.piece_priority(idx, 5);
     }
 
@@ -213,32 +198,34 @@ void download_control_worker::handle_set_playback_position(size_t offset, bool f
         
         /* for the first buffering_state_length_ pieces, don't delay the
          * random access requests (speeds up pre-buffering) */
-        if(buffering_state_counter_ > buffering_state_length_) 
-        {
-            disp_->post_delayed(
-                boost::bind(&download_control_worker::fetch_missing_pieces, this, 
-                            dev, 
-                            first_piece_to_prioritize, 
-                            first_piece_to_prioritize + critical_window_ - 1,
-                            force_request,
-                            _1));
-        } 
-        else 
+        if(buffering_state_counter_ <= buffering_state_length_ || pre_buffer)
         {    
             disp_->post(
                 boost::bind(&download_control_worker::fetch_missing_pieces, this, 
                             dev,
                             first_piece_to_prioritize, 
-                            first_piece_to_prioritize + critical_window_ - 1,
+                            first_piece_to_prioritize + num_pieces_in_critical_window - 1,
                             force_request,
                             boost::system::error_code()));
-            ++buffering_state_counter_;
+            // explicit pre buffering is not considered part of the (implicit) buffering stage.
+            if(!pre_buffer) {
+                ++buffering_state_counter_;
 #ifdef _DEBUG
-            if(buffering_state_counter_ > buffering_state_length_) {
-                BOOST_LOG_TRIVIAL(debug) << "Left buffering state";
-            }
+                if(buffering_state_counter_ > buffering_state_length_) {
+                    BOOST_LOG_TRIVIAL(debug) << "Left buffering state";
+                }
 #endif
-            
+            }
+        }
+        else
+        {
+            disp_->post_delayed(
+                boost::bind(&download_control_worker::fetch_missing_pieces, this, 
+                            dev, 
+                            first_piece_to_prioritize, 
+                            first_piece_to_prioritize + num_pieces_in_critical_window - 1,
+                            force_request,
+                            _1));
         }
     }
 }
@@ -258,11 +245,11 @@ void download_control_worker::fetch_missing_pieces(download_device* dev,
 
     std::vector<libcow::piece_request> reqs;
 
-    libtorrent::torrent_info torrent_info = torrent_handle_.get_torrent_info();
+    const libtorrent::torrent_info& torrent_info = torrent_handle_.get_torrent_info();
 
     for(int i = first_piece; i <= last_piece; ++i) {
         // don't request non-existing pieces
-        if(i >= torrent_handle_.get_torrent_info().num_pieces()) {
+        if(i >= torrent_info.num_pieces()) {
             break;
         }
         /* Request only pieces that we don't already have or 

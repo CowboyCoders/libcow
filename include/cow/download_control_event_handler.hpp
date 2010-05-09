@@ -7,7 +7,7 @@
 
 namespace libcow 
 {
-
+    class chunk;
    /**
     * This class handles events from libcow::download_control:s.
     */
@@ -41,7 +41,7 @@ namespace libcow
         * @param piece The pieces that needs to be downloaded.
         * @param callback The callback function to call.
         */
-        void invoke_when_downloaded(const std::vector<int>& pieces, 
+        void invoke_when_downloaded(const std::vector<chunk>& chunks, 
                                     boost::function<void(std::vector<int>)> callback);
 
        /** 
@@ -100,7 +100,7 @@ namespace libcow
 
         void handle_set_piece_src(int source, size_t piece_index);
         void handle_invoke_after_init(boost::function<void(void)> callback);
-        void handle_invoke_when_downloaded(const std::vector<int>& pieces, 
+        void handle_invoke_when_downloaded(const std::vector<chunk>& chunks, 
                                            boost::function<void(std::vector<int>)> callback);
         void handle_set_piece_finished_callback(const boost::function<void(int,int)>& func);
         void handle_unset_piece_finished_callback();
