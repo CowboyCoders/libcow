@@ -34,6 +34,7 @@ or implied, of CowboyCoders.
 #include <cow/dispatcher.hpp>
 #include <cow/download_control_event_handler.hpp>
 #include <cow/download_control_worker.hpp>
+#include <cow/exceptions.hpp>
 
 #include <boost/noncopyable.hpp>
 #include <boost/log/trivial.hpp>
@@ -176,6 +177,23 @@ namespace libcow {
         * @return The piece length in bytes.
         */
 		int piece_length();
+
+       /**
+        * Returns the size of the file managed by this download_control.
+        * @returns The file size in bytes.
+        */
+        size_t file_size() 
+        {
+            const libtorrent::torrent_info& torrent_info = handle_.get_torrent_info();
+            if(torrent_info.num_files() != 1) {
+                std::stringstream ss;
+                ss << "Wrong number of files in this torrent. Expected 1 but was " << torrent_info.num_files();
+                std::string msg = ss.str();
+                throw libcow::exception(msg);
+            }
+
+            return static_cast<size_t>(torrent_info.file_at(0).size);
+        }
 
        /**
         * This function will be used as a callback for download devices to use
