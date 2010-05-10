@@ -269,15 +269,7 @@ void download_control_worker::fetch_missing_pieces(download_device* dev,
     }
 
     if(reqs.size() > 0) {
-        try {
-            dev->get_pieces(reqs);
-        } catch(libcow::exception& e) {
-            // unfortunately, we can't do much here
-            // everything is asynchronous, so there's no way 
-            // to get the exception back to the original caller
-            BOOST_LOG_TRIVIAL(warning) << "download_control_worker::fetch_missing_pieces: "
-                                       << "downlad_device dev throw exception: " << e.what();
-        }
+        dev->get_pieces(reqs);
     }
 }
 

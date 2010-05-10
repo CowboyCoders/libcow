@@ -43,7 +43,6 @@ size_t curl_instance::invoke_dynamic_write(void *downloaded_data,
                                            size_t num_elements,
                                            void *object)
 {
-    BOOST_LOG_TRIVIAL(debug) << "curl_instance: invoke_dynamic_write called";
     curl_instance *instance = static_cast<curl_instance*>(object);
     return instance->write_dynamic_data(downloaded_data,element_size,num_elements);
 }
@@ -55,6 +54,16 @@ size_t curl_instance::invoke_allocated_write(void *downloaded_data,
 {
     curl_instance *instance = static_cast<curl_instance*>(object);
     return instance->write_allocated_data(downloaded_data,element_size,num_elements);
+}
+
+int curl_instance::invoke_progress_callback(void *object,
+                                            double dltotal,
+                                            double dlnow,
+                                            double ultotal,
+                                            double ulnow)
+{
+    curl_instance *instance = static_cast<curl_instance*>(object);
+    return instance->progress_callback(dltotal,dlnow,ultotal,ulnow);
 }
 
 curl_instance::curl_instance(const std::string& connection_string) :
@@ -70,8 +79,10 @@ curl_instance::curl_instance(const std::string& connection_string) :
     }
     curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L); // we need to use a progress callback to terminate an ongoing connection
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA,this);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, curl_instance::invoke_progress_callback);
 }
 
 curl_instance::~curl_instance()
@@ -80,6 +91,11 @@ curl_instance::~curl_instance()
     if(allocated_buffer_ != 0) {
         delete[] allocated_buffer_;
     }
+}
+
+int curl_instance::progress_callback(double dltotal,double dlnow,double ultotal,double ulnow)
+{
+    return 0;
 }
 
 size_t curl_instance::write_allocated_data(void* downloaded_data, size_t element_size, size_t num_elements)
@@ -104,6 +120,11 @@ size_t curl_instance::write_allocated_data(void* downloaded_data, size_t element
 
 size_t curl_instance::write_dynamic_data(void* downloaded_data, size_t element_size, size_t num_elements)
 {
+    if(element_size != sizeof(char)) {
+        BOOST_LOG_TRIVIAL(warning) << "curl_instance::write_dynamic_data: element_size is too large!";
+        return 0;
+    }
+
     BOOST_LOG_TRIVIAL(debug) << "curl_instance: writing dynamic data";
     for(size_t i = 0; i < element_size*num_elements; ++i) {
         dynamic_buffer_ << ((char *) downloaded_data)[i];
@@ -147,6 +168,10 @@ void curl_instance::execute_curl_request()
     BOOST_LOG_TRIVIAL(debug) << "curl_instance: execute_curl_request called";
     CURLcode res = curl_easy_perform(curl);
     
+    if(res == CURLE_ABORTED_BY_CALLBACK) {
+        BOOST_LOG_TRIVIAL(debug) << "curl_instance: curl request was aborted by callback!";
+    }
+    
     if(res != CURLE_OK) {
         std::stringstream msg;
         msg << "Download failed from URL '" << url_ << "': " << curl_easy_strerror(res);
@@ -186,7 +211,6 @@ utils::buffer curl_instance::perform_bounded_request(size_t timeout,
 std::stringstream& curl_instance::perform_unbounded_request(size_t timeout, 
                                                             const std::vector<std::string>& headers)
 {
-    BOOST_LOG_TRIVIAL(debug) << "curl_instance: performing an unbounded request";
     set_timeout(timeout);
     set_headers(headers);
     

@@ -68,6 +68,7 @@ namespace libcow
         size_t write_dynamic_data(void *downloaded_data,
                                   size_t element_size,
                                   size_t num_elements);
+        int progress_callback(double dltotal,double dlnow,double ultotal,double ulnow);
         
         static size_t invoke_allocated_write(void *buffer,
                                              size_t element_size,
@@ -77,6 +78,11 @@ namespace libcow
                                            size_t element_size,
                                            size_t num_elements,
                                            void *object);
+        static int invoke_progress_callback(void *object,
+                                            double dltotal,
+                                            double dlnow,
+                                            double ultotal,
+                                            double ulnow);
         void check_curl_code(CURLcode code);
         void set_timeout(size_t timeout);
         void set_headers(const std::vector<std::string>& headers);
