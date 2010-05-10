@@ -71,6 +71,7 @@ curl_instance::curl_instance(const std::string& connection_string) :
     curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 }
 
 curl_instance::~curl_instance()
