@@ -147,7 +147,8 @@ void download_control_worker::handle_download_strategy(const chunk& c, bool forc
     // the total size (in bytes) of the priorizied pieces will at least be 'length'.
 
     int num_pieces_in_critical_window = 
-        static_cast<int>(ceil(c.length() * 1.0 / torrent_info.piece_length()));
+        static_cast<int>(floor((c.offset() + c.length()) * 1.0 / torrent_info.piece_length()))
+            - first_piece_to_prioritize + 1;
     
     //std::cout << "first_piece_to_prioritize: " << first_piece_to_prioritize << std::endl;
 
@@ -257,6 +258,7 @@ void download_control_worker::fetch_missing_pieces(download_device* dev,
          * requested pieces if force_request is set to true 
          * (but never request pieces that we already have).
          */
+        bool shit = !pieces[i];
         if(!pieces[i] && (force_request || !critically_requested_[i])) {
             reqs.push_back(piece_request(torrent_info.piece_length(), i, 1));
             critically_requested_[i] = true;
