@@ -152,7 +152,7 @@ void on_demand_server_connection::worker(std::string connection_str,
                                          const std::size_t piece_size,
                                          const std::vector<int>& indices)
 {
-    
+     
     curl_instance curl(connection_str);
 
     std::stringstream size_str;
@@ -177,28 +177,35 @@ void on_demand_server_connection::worker(std::string connection_str,
     headers.push_back(size_str.str());
     headers.push_back(index_str.str());
 
-    utils::buffer buf = curl.perform_bounded_request(60,headers,piece_size*indices.size());
-    
-    // these are the pointers we will actually pass to the user
-    std::vector<piece_data> piece_datas;
+    try {
+        utils::buffer buf = curl.perform_bounded_request(60,headers,piece_size*indices.size());
+        
+        // these are the pointers we will actually pass to the user
+        std::vector<piece_data> piece_datas;
 
-    // "slice" up the buffer into pieces
-    // (in fact, we just do some pointer arithmetic on the buffer)
-    for(size_t i = 0; i < indices.size(); ++i) {
-        utils::buffer data(buf.data() + (piece_size * i), piece_size);
-        piece_data piece(indices[i], data);
-        piece_datas.push_back(piece);
-    }
+        // "slice" up the buffer into pieces
+        // (in fact, we just do some pointer arithmetic on the buffer)
+        for(size_t i = 0; i < indices.size(); ++i) {
+            utils::buffer data(buf.data() + (piece_size * i), piece_size);
+            piece_data piece(indices[i], data);
+            piece_datas.push_back(piece);
+        }
 
-    // invoke user defined callback
-    if(handler_ == NULL){
-        BOOST_LOG_TRIVIAL(error) << "No add pieces function set!";
-        return;
+        // invoke user defined callback
+        if(handler_ == NULL){
+            BOOST_LOG_TRIVIAL(error) << "No add pieces function set!";
+            return;
+        }
+        if(handler_) {
+            handler_(id_, piece_datas);
+        }
+    } catch(libcow::exception& e) {
+        // unfortunately, we can't do much here
+        // everything is asynchronous, so there's no way 
+        // to get the exception back to the original caller
+        BOOST_LOG_TRIVIAL(warning) << "download_control_worker::fetch_missing_pieces: "
+                                       << "downlad_device dev throw exception: " << e.what();
     }
-    if(handler_) {
-        handler_(id_, piece_datas);
-    }
-
 }
 
 bool on_demand_server_connection::is_open()
