@@ -75,16 +75,16 @@ int main() {
         std::cerr << e.what() << std::endl;
     }
     // In order to request data from the on_demand_server, we must first create a vector of integers.
-    std::vector<int> requests;
+    std::vector<libcow::chunk> requests;
+    
     // Addings piece indices for the pieces we want to request
-    for(int idx = 0; idx < 10; ++idx)
-        requests.push_back(idx);
+    /*for(int idx = 0; idx < 10; ++idx)
+		  requests.push_back(libcow::chunk(idx*100, 100));
+	 */
     // Sends the requests to the libcow::download_control. After some time, the
     // pieces will be visible in the log.
-    controller->pre_buffer(requests);
-
-
-
+	 size_t idx = 0;
+    controller->pre_buffer(libcow::chunk(idx*100, 100));
 
     std::cout << "Running on_demand_example, press ENTER to quit...";
     char q;
@@ -97,5 +97,6 @@ int main() {
     // Stop the download.
     example_client.remove_download(controller);
     // Quit :-)
+
     return 0;
 }
