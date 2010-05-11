@@ -53,7 +53,7 @@ void download_control_worker::set_critical_window_timeout(int timeout)
 
 void download_control_worker::handle_set_critical_window_timeout(int timeout)
 {
-    // DJ HENRY SPIN THAT SHIT
+    // FIXME: implement this
 }
         
 void download_control_worker::set_piece_requested(int piece_index, bool req)
@@ -258,7 +258,6 @@ void download_control_worker::fetch_missing_pieces(download_device* dev,
          * requested pieces if force_request is set to true 
          * (but never request pieces that we already have).
          */
-        bool shit = !pieces[i];
         if(!pieces[i] && (force_request || !critically_requested_[i])) {
             reqs.push_back(piece_request(torrent_info.piece_length(), i, 1));
             critically_requested_[i] = true;

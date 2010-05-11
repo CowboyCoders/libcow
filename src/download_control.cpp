@@ -82,12 +82,18 @@ int download_control::piece_length()
 void download_control::add_pieces(int id, const std::vector<piece_data>& pieces)
 {
     if(handle_.is_valid() && !handle_.is_seed()) {
-        libtorrent::torrent_info info = handle_.get_torrent_info();
+        const libtorrent::torrent_info& info = handle_.get_torrent_info();
         std::vector<piece_data>::const_iterator iter;
 
-        libtorrent::torrent_status status = handle_.status();
+        const libtorrent::torrent_status& status = handle_.status();
         for(iter = pieces.begin(); iter != pieces.end(); ++iter) 
         {
+            if(iter->index >= info.num_pieces()) {
+                BOOST_LOG_TRIVIAL(error) << "download_control::add_pieces: "
+                    << "trying to add piece with index " << iter->index
+                    << "which is out of bounds";
+                continue;
+            }
             if((int)iter->data.size() < info.piece_size(iter->index)) {
                 BOOST_LOG_TRIVIAL(warning) << "download_control::add_pieces: "
                     << "trying to add piece with index " << iter->index

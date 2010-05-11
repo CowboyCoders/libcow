@@ -64,14 +64,15 @@ multicast_server_connection::multicast_server_connection() :
 }
 multicast_server_connection::~multicast_server_connection()
 {
-    delete [] data_;
-    delete [] piece_data_;
     io_service_.stop();
 
     // wait for threads to complete their tasks
     for(size_t i = 0; i < threads.size(); ++i) {
         threads[i]->join();
     }
+
+    delete [] data_;
+    delete [] piece_data_;
 }
 bool multicast_server_connection::open(const int id, std::string type, const libcow::properties& settings)
 {
