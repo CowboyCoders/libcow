@@ -78,6 +78,7 @@ cow_client::cow_client()
     settings.announce_to_all_trackers = true;
     settings.min_announce_interval = 15;
     settings.local_service_announce_interval = 10;
+    
     session_.set_settings(settings);
 
     // disabling settings.auto_upload_slots and setting max_uploads to INT_MAX
