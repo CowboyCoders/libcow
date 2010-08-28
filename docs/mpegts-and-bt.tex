@@ -1,0 +1,181 @@
+% Combing MPEG-TS and BitTorrent
+% - Problems and suggested solutions
+% 
+% Author: Erik Helin
+% Date: April 2010
+% License: Creative Commons Attribution license, see
+% http://creativecommons.org/licenses/by/3.0/us
+
+\documentclass[11pt,oneside,a4paper,onecolumn]{article}
+\usepackage{url}
+\begin{document}
+
+% BEGIN TITLE
+\title{Combining MPEG-TS and BitTorrent\\
+       \large{Problems and Suggested Solutions}}
+\author{Erik Helin\\\url{ehelin@kth.se}}
+\maketitle
+% END TITLE
+
+\section{Background}
+The standard protocol today for digital 
+video broadcasting (DVB) is called 
+MPEG Transport Stream (MPEG-TS).
+DVB systems distribute the data by different approaches, 
+for example satellite, cable and terrestial television\cite{dvb}.
+Today, the internet protocol (IP) is emerging as another medium for distributing television. 
+A common technique for distributing TV in access networks is multicast.
+The use of multicast eases the load on the servers providing the media
+since the data is replicated in the routers\cite{multicast}.
+One of the most widely used protocols for transporting the television
+data via multicast is MPEG-TS.
+The drawback of only using multicast is that services such as
+video-on-demand are hard to implement. A possible solution to this
+problem is to combine MPEG-TS with another transportation technique.
+
+This article will examine the possible use of BitTorrent together with 
+multicast. BitTorrent is a protocol which was created by Bram Cohen in
+2001\cite{bittorrent}. BitTorrent makes it possible for clients in a
+network to efficiently share data with each other. This is because
+the BitTorrent protocol splits the file into smaller pieces. For each
+piece, a hash is created. Therefore, a client can share data with the
+rest of the network, even if he/she only has a small part of the original
+file. Due to this, large files can be effectively distributed via
+BitTorrent. Another advantage of using BitTorrent to share files is
+that a server having the data isn't required. Since the clients share
+the data with each other, the server only needs to distribute the ip
+addresses of the clients to the clients. This is done by a so-called
+tracker.
+
+However, when combining MPEG-TS with BitTorrent, several problems
+arise.
+
+\section{Problems}
+The idea when combining MPEG-TS and BitTorrent is that a video will be
+broadcast in access network using multicast and MPEG-TS. Once a client
+has received data from the multicast stream, it should be able to share this
+data with other clients using BitTorrent. Therefore, any new clients
+entering the network will be able to watch the broadcast from the
+beginning, by downloading data from other clients via BitTorrent. This
+will create a "catch-up" effect, without requiring any additional
+servers providing the data. 
+
+\subsection{Problem 1}
+\label{sec:p1}
+The first major problem when combining BitTorrent and MPEG-TS is that
+the 
+BitTorrent protocol needs to have the entire file beforehand, otherwise
+it will not be able to create the hashes for all the pieces. This is
+because the hash depends on the content of the piece. Since TV data could originate from a live source, such as a soccer game,
+it's impossible to have the data in advance. However, this
+article will be focusing on the use of BitTorrent in an access
+network where the distributed data will be known prior to broadcasting, so
+ a solution to this problem will not be mentioned.
+
+\subsection{Problem 2}
+The second major problem when combining MPEG-TS and BitTorrent is how to
+find out which BitTorrent piece a received MPEG-TS packet belongs
+to. If the data is meant
+to be shared via BitTorrent, the received MPEG-TS packet must be added
+to a piece. Once all MPEG-TS packets belonging to a piece have been received,
+the piece will be hashed and then shared.
+The MPEG-TS protocol was meant to be used for live distribution
+of video. Therefore, the protocol does not contain any kind of "state".
+It is impossible to know, when receiving an MPEG-TS packet, from which
+part of the original file the packet comes from. Therefore, it's also
+impossible, from an MPEG-TS packet alone, to know which piece the packet
+originated.
+
+\subsection{Problem 3}
+The third major problem is the integrity of the data transported via
+MPEG-TS. For a client to be able to share data via BitTorrent, the
+recieved data must be an exact bit-for-bit copy of the original file. If
+this is not the case, the hash for the downloaded piece will not be the
+same as the one created before broadcasting. BitTorrent does not allow
+sharing of data with different hashes, so therefore the client will not be
+able to share the received data. A packed transported by MPEG-TS is exactly 188 bytes. At least once
+each 100 ms, this packages contains a program clock reference (PCR).
+The PCR consists of 42 bits. The first 33 bits are based on a 90kHz
+hardware clock, and the last 9 bits are based on a 27MHz clock.
+Usually when a video is sent using MPEG-TS, the values of the PCR will
+be renewed. Therefore, a movie sent with the help of MPEG-TS will not be
+the same if it is broadcasted twice, since the second time, there will
+be new PCRs. The two different movies will look identical with regards
+to playback, but they will differ on a bit-level. 
+
+\section{Suggested solutions}
+\subsection{Suggested solution 1}
+As mentioned in section \ref{sec:p1}, a solution for the first problem will not be discussed in this article.
+For more information about a solution to this problem, see \url{http://www.tribler.org/trac}.
+
+\subsection{Suggested solution 2}
+I will here describe two possible ways to solve problem number two, 
+and discuss their advantages and disadvantages.
+
+The first solution uses the fact that the file is known before it is being distributed. 
+This solution also assumes that it is possible to make modifications to the file before 
+distributing it. Because of these two assumptions, one can insert data into the file 
+telling which piece a part of the file belongs to. Since there is no lower limit on 
+the payload data of an MPEG-TS packet, it is hard to know how often the added piece data would 
+have to be inserted into the file. However, this is not strictly necessary. The downloaded data 
+could be searched for the appearance of piece information, and then one would be able to deduce
+which piece the data belongs to. The drawbacks of this solution is that it requires modification of the file. 
+This means that a normal decoder will not be able to decode the file and retrieve the "raw" 
+movie data. Therefore, a custom decoder will have to be written, something which is hard to do 
+and error prone. An advantage of this solution is that only one file has to be transmitted.
+
+The second solutions is based on the assumption that it is possible to send additional data to 
+the client via other sources, such as HTTP. This solution is also dependant on a solution to 
+problem number three. This solution also depends on the fact that the shared data will be a 
+saved copy of the MPEG-TS stream, not the movie transported by the MPEG-TS stream.
+The idea is to save a copy of the MPEG-TS stream by sending and then letting a receiver only 
+save the packages to disc. This could be done at high speeds as long as there is no risk of packet loss.
+The saved copy of the stream will then be retransmitted both with MPEG-TS, and also shared via 
+BitTorrent. The saved copy of the stream will be hashed and prepared for distribution via BitTorrent.
+The BitTorrent pieces will be created in a way so that the size of each piece is a multiple of 188 bytes.
+The saved copy of the stream will also be split into 188 bytes chunks (the same size as the packets distributed the second time).
+Since each BitTorrent piece is a multiple of 188 bytes, 
+each BitTorrent piece will contain a fixed amount of these 188 bytes chunks. 
+
+\subsection{Suggested solution 3}
+I have no complete suggestion for a solution to problem number three. One possible way to achieve integrity of the transported file is to 
+zero out the PCR field of the MPEG-TS packet. This modified MPEG-TS will now be bit-for-bit equal to another MPEG-TS carrying the exact same
+payload. Therefore, an MPEG-TS file with zeroed PCRs could be shared via BitTorrent. However, a decoder would likely fail at decoding the MPEG-TS file
+with zeroed PCR, since the PCR is often used in the decoding process. A solution to this would be to store the original value of the PCR and reapply 
+for the decoding process.
+
+The advantages of this solution is that it would be possible to transfer MPEG-TS streamed packets via BitTorrent. The disadvantages are however
+significant, since a MPEG-TS decoder would have to be written (or bought) to be able to change the PCR. It is also hard to apply the PCR once again
+for the decoding process. If one could find a multicast server which did not change the PCR when broadcasting the file, the problem would disappear. 
+There are however multicast servers who do change the PCR, for example VideoLAN, so if one wants full compatibility with all multicast
+servers, this problem must be solved.
+
+\section{Conclusion}
+Unfortunately, there are no easy solutions to the problems presented in this article. The reasons for this are, as mentioned earlier, largely due to
+the fact that an MPEG-TS has no information regarding it's own "state". Of course, there might be other solutions to the problem than the ones suggested
+here. An alternative approach is to write a protocol similar to BitTorrent, which is easier to combine with MPEG-TS. I do not know of solutions
+other than the ones presented here which combine standard BitTorrent and MPEG-TS.
+
+
+\section{Conclusion}
+
+\begin{thebibliography}{9}
+\bibitem{dvb}
+    Wikipedia,
+    \emph{Digital Video Broadcasting},
+    \url{http://en.wikipedia.org/wiki/Digital_Video_Broadcasting},
+    May, 2010
+\bibitem{multicast}
+    Wikipedia,
+    \emph{Multicast},
+    \url{http://en.wikipedia.org/wiki/Multicast},
+    May, 2010
+\bibitem{bittorrent}
+    Wikipedia,
+    \emph{BitTorrent (protocol)},
+    \url{http://en.wikipedia.org/wiki/BitTorrent_(protocol)},
+    May, 2010
+\end{thebibliography}
+\end{document}
+
+

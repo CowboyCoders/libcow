@@ -1,0 +1,127 @@
+/*!\mainpage libcow documentation
+    \section intro_sec Introduction
+ 
+    libcow is used for streaming video via multiple sources.
+    
+    This page consists of the following:
+        - Compiling
+        - Installing
+        - User guide
+ 
+    You might also want to read the examples, or the 
+    overview of the library.
+    
+    \section compiling_sec Compiling
+    
+    \subsection boost_sec Compiling Boost
+    \li Make a temporary directory to download files to.
+    \code
+    mkdir temp && cd temp
+    \endcode
+    \li Download Boost from http://sourceforge.net/projects/boost/files/boost/1.42.0/boost_1_42_0.tar.gz/download .
+    \li Download Boost.Log from SVN:
+    \code
+    svn co https://boost-log.svn.sourceforge.net/svnroot/boost-log boost-log 
+    \endcode 
+    \li Install build tools with apt:  
+    \code 
+    sudo aptitude install build-essential 
+    \endcode
+    \li Unpack Boost:  
+    \code
+    tar xvzf boost_1_42_0.tar.gz 
+    \endcode
+    \li Copy Boost.Log to the Boost directory:
+    \code
+    cp -r boost-log/trunk/boost-log/boost/log boost_1_42_0/boost/
+    cp -r boost-log/trunk/boost-log/libs/log boost_1_42_0/libs/
+    \endcode
+    \li Enter the Boost directory and run \c bootstrap.sh:
+    \code
+    cd boost_1_42_0 && ./bootstrap.sh --prefix=/usr/local --without-libraries=python,graph,graph_parallel,mpi    
+    \endcode
+    \li Install by running bjam:
+    \code
+    sudo ./bjam install
+    \endcode
+    \li Make sure \c /usr/local/lib exists at the end of the file \c /etc/ld.so.conf
+    \li Run sudo ldconfig to reload ld.so.conf
+
+    \subsection libtorrent_sec Compiling libtorrent
+    \warning Make sure you have installed Boost and Boost.Log before compiling libtorrent.
+
+    \li Start by installing the required libraries:
+    \code
+    sudo aptitude install autoconf libtool libssl-dev libgeoip-dev
+    \endcode
+    \li Download libtorrent from SVN:
+    \code
+    svn co https://libtorrent.svn.sourceforge.net/svnroot/libtorrent/trunk libtorrent 
+    \endcode
+    \li Run autotool.sh:
+    \code
+    cd libtorrent 
+    ./autotool.sh 
+    \endcode
+    \li If you are running Windows, contact henry at moshisushi@gmail.com for a patch that you must apply to libtorrent.
+    \li If you are running Ubuntu, you need to patch the configure file:
+    \li Open the file:
+    \code
+    vim configure
+    \endcode
+    \li Go to line 15290, which is right above the following line: "# Check whether --with-boost-system was given."
+    \li Add the following two lines:
+    \code
+    # Use posix_memalign() instead of valloc() to avoid issues with eglibc
+    $as_echo "#define TORRENT_USE_POSIX_MEMALIGN 1" >>confdefs.h
+    \endcode
+    \li Save the file and run configure:
+    \code
+    ./configure
+    \endcode
+    \li Compile and install:
+    \code
+    make && sudo make install
+    \endcode
+
+    \subsection qt_sec Installing Qt
+    \li Install required libraries:
+    \code
+    sudo aptitude install libqt4-dev libqt4-phonon libqt4-phonon-dev
+    \endcode
+
+    \subsection packages_sec Installing additional packages
+    \warning Make sure you install version 2.8 of CMake!
+
+    \li Install cURL and CMake:
+    \code
+    sudo aptitude install libcurl-dev cmake
+    \endcode
+    \subsection source Getting the source code
+    \li Download the source code with SVN:
+    \code
+    svn co http://wiki.testbed.se:65432/repos/p2pmediaplayer/
+    \endcode
+    
+    \section installing_sec Installing
+    \li First, compile libcow:
+    \code
+    cd p2pmediaplayer/trunk/libcow/
+    mkdir build && cd build
+    cmake ..
+    make cow
+    \endcode
+    \li Compile cow_player:
+    \code
+    cd p2pmediaplayer/trunk/cow_player/
+    mkdir build && cd build
+    cmake ..
+    make
+    \endcode
+
+    Finally, run cow_player!
+    \code
+    ./cow_player
+    \endcode
+    \section user_guide_sec User guide
+ */
